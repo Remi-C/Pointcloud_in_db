@@ -1,7 +1,8 @@
 Pointcloud_in_db
 ================
 
-This is a short project using several tools to store efficentlly large point clouds in a postgres data base.
+This is a short project using several open source tools to store efficentlly large point clouds in a postgres data base.
+We propose an efficient and parallel way to load data into base, a way to group points to limit the number of row used in base, and simple use of indexes to greatly accelerate test on pointcloud.
 
 
 The proposed solution has been tested on a 300Millions points cloud and is very efficient (hundreds of milliseconds to perform spatial/temporal intersection, compressed storage, 1 Billion points import in DB by hour, around 200k points/sec on output)
@@ -109,17 +110,76 @@ We tested this solution both on a dedicaced 64 bits Ubuntu 12.0.4 LTS and on a 3
 				_NOTE : warning : this code may cause troubles on windows
 				
 
-LOAD POINTCLOUD INTO DATABASE
+## HOWTO LOAD POINT CLOUD INTO DATABASE ##
 	
-	A description of how it works
+###What you need :###
 	
-	you have files describing lot's and lot's of points. These points have arbitrary attributs.
-	Amongst one point cloud every point has the sames attributes.
+-	You have files describing lot's and lot's of points. These points have arbitrary attributs.
+-	Amongst one point cloud every point has the sames attributes.
+-	You have a database and permission to create table and so.
+-	You have all the scripts and the RPly_convert programm
+-	Note : 
+	The scripts are written to work with ply files, but can be easily adapted as long you can provide an ascii representation of your table points.
 	
-	The script are written to work with ply files, but can be easily adapted as long you can provide an ascii representation of your points.
 	
+				
+###DAbstract of the loading process step by step###
+- enable your data base
+- execute first sql script "1_Preparing_DB_before_load.sql"
+- execute bash script to import data into database "parallel_import_into_db.sh"
+- execute second sql script "3_tuning_table_after_load.sql"
+		
+
+		
+		_first you have to prepare everything in base and out base.
+			_in base : you have to create the 
 	
 
+
+	
+	
+	
+	
+	How does it works?
+	Abstract : 
+		The ply files containing a binary representation of points are converted to an ascii representation of the points, very close to the csv format (the separator is a whitespace, not a comma)
+		This ascii points with all their attributes are then send to a psql process which fill a table in database with incoming data
+		Then this temporary table containing one row per point and one column per attribute is used to group points by cubic meter. The points grouped are then fused to a PCPATCH and written in the table where the totality of the pointcloud will be stored.
+		The point must respect a schema (see table pointcloud_formats).
+		
+		When data loading is finished, you have a very big pointcloud in a table with few row, but very large row. It is then efficient to use indexes ont this table.
+	
+	How does it works precisely
+		_Sending points to database
+		_getting points into temporary tables
+		_grouping temporary points into patch 
+		_using the patch table
+		
+		_Sending points to database
+			the data flow is :
+			binary points --> ascii points --> remove last space in every line --> to database
+			This steps are performed using a modified version of RPly, the sed utility, and fifo and pipe. All the process is streamed (no temporary files)
+			NOTE : this process is suboptimale, it would be better to directly load binary points into postgres (using pg_bulkoad for instance)
+			_ converting from binary ply to binary ascii
+				We use a modified version of RPLY : it has been modified to not ouput the ply header and to increase the number of digits it outputs. One probleme is that during ascii conversion it adds a whitespace at the end of lines. It must be removed.
+			_removing the extra whitespace at the end of line
+				We use the "sed" command line utility, in streaming mode, do detect end of line and remove the whitespace before.
+				
+		_getting points into temporary tables
+			The input is a stream of ascii point values. The order of the input values and of the temporary table column must exactly match.
+			We use a psql process hosting a SQL COPY statement reading from stdin and writing into the temporary table inside the database.
+		
+		_grouping temporary points into patch
+			This si currently the msot time consuming part of the process, and could without a doubt be greatly improved. The idea is to use the group by function of sql to form groups of points close enough spatially. We also tried grouping the points by time of acquisition. Then we create a patch with this points and insert it into the table which will host the pointcloud
+		
+		_using the patch table
+			_ creating indexes
+				We create indexes based on what we want to do with data
+			_querying for points :
+				a query for points is in 2 parts. The first part is to find the patches that might contains the points we are interested in. The second part is to extract points from this patches and use it.
+				
+			
+			
 
 				
 				
