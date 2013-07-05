@@ -319,6 +319,7 @@ Of course there is no interest to use a database to store the few sample points 
 You may fill the data base with several millions (billions) of points to see the power of this solution.
 One key SQL tool is to be able to do spatial filtering/ temporal filtering on the patches
 Here are 2 examples that you could also visualize in QGIS
+	
 	--spatial filtering with the demo set
 	SELECT row_number() OVER () AS gid, points.geom as geom
 		FROM (
@@ -342,9 +343,44 @@ Here are 2 examples that you could also visualize in QGIS
 
 ### Working with your own point attributes ###
 
+@TODO
+To load and use your own point type (meaning a lidar point with any attributes) you need to tweak several parts
+* scripts : 
+	* `1_Preparing_DB_before_load.sql`
+		* Add an entry to the `pointcloud_formats` table with your own data schema
+		* Create a patch table using right patch definition
+	* `parallel_import_into_db.sh`
+		* Change at least the data folder to match the data where your data is
+		* change the `pointschema` to your custom schema
+	* `sequential_import_into_db.sh`
+		* Change the definition of temporary table (sql CREATE TABLE), the columns must match exactly you point attributes
+		* Change the way the patches are created, as there is a hardcoded list of attributes here
+		* 
+	* `3_tuning_table_after_load.sql`
+		
+	
+
 ### Loading from other file type than binary ply ###
 
-		
+The solution can be easily adapted to work with point data other than binary ply.
+Supposing that you have a programm converting you point into a stream of ascii values,
+you just have to change the parameter `programmplytoascii` in the `parallel_import_into_db.sh` to give your programm.
+
+_TIP : if you point are already in csv format, you can use a linux command to stream it (like `cat` or `sed`)
+If you use the las format, there is a las2txt utility, you need to remove the header
+You could also use the [PDAL project](http://www.pointcloud.org/), altought still in alpha release_
+
+
+### Using different kind of partitions for your patches ###
+The demo use a partition by cubic meter
+Here are some tips to use other
+	--partition by 0.5*0.5*0.5 cubic meter
+	--partition using an irregular grid (Postgis)
+	--partition by 100 Millisecond on acquisition time
+	
+	--multi scale partition :
+		--first partition by cubic meter, then partition by 5*5*5 cubic meter the patches containing less than 5 points
+@TODO		
 
 
 ##Licence summary##
