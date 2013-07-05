@@ -65,7 +65,8 @@ We tested this solution both on a dedicaced 64 bits Ubuntu 12.0.4 LTS and on a 3
 						_ you have to tune at least "shared_buffers" ,  "wal_buffers" ,"work_mem" , "maintenance_work_mem" ,"checkpoint_segments" ,"effective_cache_size"
 						_ you have to change the parameter listen_adresses or you won't be able to reach the server
 					_pg_hba.conf
-						_ tune the parameters to allow connection trough md5
+						_ tune the parameters to allow connection trough md5 from host
+						_tune the paramter to allow a trust connection for postgres from local
 				_restart server ( sudo /etc/init.d/postgresql restart)
 				_(optionnal) redirect your server port in the virtualbox (in Settings/network/redirect ports) to access it from outside
 				_create a database and test the server
@@ -123,7 +124,7 @@ We tested this solution both on a dedicaced 64 bits Ubuntu 12.0.4 LTS and on a 3
 	
 	
 				
-###DAbstract of the loading process step by step###
+###Abstract of the loading process step by step###
 - enable your data base
 - execute first sql script "1_Preparing_DB_before_load.sql"
 - execute bash script to import data into database "parallel_import_into_db.sh"
