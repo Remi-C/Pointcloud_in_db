@@ -243,18 +243,77 @@ __|patch table |__ __--->__ __|filtering on patch|__ __--->__ __| patch candidat
 ##How to use default##
 ----------------------
 
+### How to use default : Short ###
+
 A demo is included in this project :
 * Download the Git sources
 * unzip it
 * Follow the install process to install every necessary tools
+* Follow demo instructions
 
->Before going on, all the necessary tools should work :
->>Postgres : you should be able to create database, schema, and have plsql
->>postgres user local permission : try to run a psql command while connected as postgres to see if all the permissions are right (``su postgres`, `psql -d _your_database_ -p 5432 -c "SELECT Version();"`)
->>postgis
->>pointcloud
->>pointcloud_postgis
->>the RPly_convert programm 
+
+####__Before going on, all the necessary tools should work__ ####
+
+* 
+ 	* Postgres : you should be able to create database, schema, and have plsql
+ 	* postgres user local permission : 
+ 		* try to run a psql command while connected as postgres to see if all the permissions are right (``su postgres`, `psql -d  your_database -p 5432 -c "SELECT Version();"`) 
+	* postgis : you should have postgis installed
+		* Try to run the following command : `psql -d  your_database -p 5432 -c "SELECT PostGIS_full_version();"`
+	* pointcloud : (test after)
+	* pointcloud_postgis (test after)
+	* the RPly_convert programm 
+		* try to run the programm on sample data : `cd Pointcloud_in_db;` `su postgres` `./RPly_Ubuntu/bin/RPly_convert  -a_nh ./data/riegl/sample_riegl_18_01.ply ./data/riegl/test_output_rplyconvert.asc`
+ `more ./data/riegl/test_output_rplyconvert.asc` 
+
+### How to use default : detailled ###
+
+* Demo Instructions
+	* Create a postgres database and ad postgis, pointcloud, pointcloud_postgis extensions
+	* Execute all the sql command __one by one__ from the `1_Preparing_DB_before_load.sql` script
+		* *TIP : with PGADMIN query editor, highlight one query and hit F5 to execute only this query*
+		* You can execut command several time : it is not going to do anything (error), but your database will be in the right state for going on with the demo
+	* Go in the `./Pointcloud_in_db folder/script` and open `parallel_import_into_db.sh`
+		* check all parameters (at least the number of thread you wan to use)
+			* There are only 5 sample riegl files for test purpose in ./data/riegl,
+		* go into `./Pointcloud_in_db folder/script`, switch to postgres user : `su postgres` and launch the script : `parallel_import_into_db.sh` 
+			* Data should be loading from the sample riegl file (5), it should be over in few seconds
+		* Now the table "acquisition_tmob_012013.riegl_pcpatch_space" should have some patches
+			* check content of fex patches with the sql command : 
+			* `SELECT gid, PC_AsText(patch)
+				FROM acquisition_tmob_012013.riegl_pcpatch_space
+				LIMIT 10` Warning : pgadmin doesn't print to big string, copy past it to a text editor to see it.
+	* Execute all the sql command __one by one__ from the `3_tuning_table_after_load.sql` script
+		* *TIP : with PGADMIN query editor, highlight one query and hit F5 to execute only this query*
+	* Now you have several indexes to quicken some queries
+	* (optionnal) you can visualyze the patches with the [Quantum GIS software](http://hub.qgis.org/projects/quantum-gis/wiki/Download)
+		* Assuming you have Qgis and the right python library ([Psycopg](http://wiki.postgresql.org/wiki/Psycopg))
+		* Create a new qgis project and save it! (or QGis will crash latter)
+		* In the `Layer/New Postgis Layer`, create a new connection to your database and save it (host is usually localhost, port should be 5432)
+		* Now open the DBManager and clic on Postgis/ConnectionToYourDatabase
+		* Adding patches
+			* Open an SQL windows
+			* type in the command : `SELECT rps.gid as gid, rps.patch::geometry AS geom
+					FROM acquisition_tmob_012013.riegl_pcpatch_space as rps
+					LIMIT 1000` and execute it
+			* Select `load as a new layer` and choose column `gid` and `geom`
+			* Name the layer and click to load it into QGIS 
+			* Select the IGNF:LAMB93 spatial referential
+			* you should see the patches geometry, ie the bounding box of points inside the patch
+		* Adding points
+			* Now open the DBManager and clic on Postgis/ConnectionToYourDatabase
+			* Open an SQL windows
+			* type in the command : 
+ 	 	`SELECT row_number() over() AS gid ,point_postgis.point AS geom 
+		FROM( 	
+			SELECT PC_Explode(patch)::geometry AS point
+			FROM acquisition_tmob_012013.riegl_pcpatch_space AS rps 
+		) AS point_postgis; `
+			* Select `load as a new layer` and choose column `gid` and `geom`
+			* Name the layer and click to load it into QGIS 
+			* Select the IGNF:LAMB93 spatial referential
+			* you should see the points
+			* *Please note that QGis is very slow to print many points, if you have over few 100k points it may crash*
 
 
 ##How to tweak to your perticular use case##
