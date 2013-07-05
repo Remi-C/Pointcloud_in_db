@@ -163,99 +163,106 @@ __|patch table |__ __--->__ __|filtering on patch|__ __--->__ __| patch candidat
  *Note : We tested this solution both on a dedicaced 64 bits Ubuntu 12.0.4 LTS and on a 32bits Ubuntu 12.0.4 LTS hosted by a virtual machine (host = windows Vista, guest = Ubuntu)* 
 
 * Abstract of the install process
+	*Install OS
 	* Install and configure postgres/postgres-dev
-	* Install and configure Postgis
-	* Install and configure Pointcloud
-	* Compil RPly_convert
+	* Install and configure Postgres extension : Postgis, pointcloud, pointcloud_postgis
+	* (semi_optionnal) Compile RPly_convert
+	* Get the scripts to make it works
+	* Prepare a data base
 
 ###Install process (long)###
 
 
-##How to use##
---------------
-
-
-
-
-
-
-
-
-The dependancies are as follow : 
-
-
-
-SETUP :
-We tested this solution both on a dedicaced 64 bits Ubuntu 12.0.4 LTS and on a 32bits Ubuntu 12.0.4 LTS hosted by a virtual machine (host = windows Vista, guest = Ubuntu)
-
-
-	( optionnal ) Virtual Machine Setup : we used VirtualBox : https://www.virtualbox.org/
-		Install is straightforward, you will need guest addition to allow shared folder and shared clipboard (usefull)
-	Ubuntu 12.0.4 setup :
-		dl the iso from the ubuntu website : http://www.ubuntu.com/download/desktop
+* Install process
+* Installing the OS
+	* ( optionnal ) Virtual Machine Setup : we used [VirtualBox](https://www.virtualbox.org/)  
+		* Install is straightforward, you will need guest addition to allow shared folder and shared clipboard (usefull)
+	* Ubuntu 12.0.4 setup :
+		* dl the iso from the ubuntu website : http://www.ubuntu.com/download/desktop
 		Use it to install from CD or directly in VirtualBox
-		Update the system (sudo apt-get update)
-	Postgres 9.2 setup
-		the process should be like this
-		
-			_ getting postgres 9.2
-				_ add the postgres repository (apt.postgresql.org , instructions : http://wiki.postgresql.org/wiki/Apt#PostgreSQL_packages_for_Debian_and_Ubuntu)
-				_ install the 9.2 binary for your linux
-				_ install the 9.2 dev packages for your linux
-			_ setup of postgres
-				_ set password for postgres user (sudo passwd postgres ; su - postgres ; psql -c"alter user postgres with password 'postgres';")
-				_ change the kernel.shmmax of your system 
-					_ edit the /etc/sysctl.conf and add line "kernel.shmmax = "XXX, you may add several other kernel.sh parameters
-				_ config files : http://www.postgresql.org/docs/9.2/static/runtime-config.html , they are in /etc/postgres/9.2/main
-					_ postgres.conf
-						_ you have to tune at least "shared_buffers" ,  "wal_buffers" ,"work_mem" , "maintenance_work_mem" ,"checkpoint_segments" ,"effective_cache_size"
-						_ you have to change the parameter listen_adresses or you won't be able to reach the server
-					_pg_hba.conf
-						_ tune the parameters to allow connection trough md5 from host
-						_tune the paramter to allow a trust connection for postgres from local
-				_restart server ( sudo /etc/init.d/postgresql restart)
-				_(optionnal) redirect your server port in the virtualbox (in Settings/network/redirect ports) to access it from outside
-				_create a database and test the server
-			
-			_getting postgis 2.0.3
-				_on ubuntu LTS 12.0.4 64 bits there is no packages for postgres 9.2, so we need to build from sources
-				_getting postgis dependecies
-					_building is easy if we don't have to build the postgis dependency :GEOS, Proj.4, GDAL, LibXML2 and JSON-C.
-					_add the repository https://launchpad.net/~ubuntugis/+archive/ppa/ and https://launchpad.net/~ubuntugis/+archive/ubuntugis-unstable
-					_ get from these repository the packages of depencies
-				
-				_compiling postgis
-					_it is very straight forward
-					_ dl sources
-					_ execute ./configure, you may need to install the command called by executing ./configure
-					_ execute "make" and "sudo make install"
-				_testing postgis
-					_ in a db add postgis extension "CREATE EXTENSION Postgis", and try the function "SELECT PostGIS_full_version();"
-			
-			_getting pointcloud
-				_getting pointcloud dependencies
-					_you will need "CUnit", which you can found in repository
-				_compiling pointcloud
-					_ dl the sources from the git repository : https://github.com/pramsey/pointcloud
-					_ run ./autogen.sh , then ./configure, then make, then sudo make install
-				_testing pointcloud
-					_ in a database, CREATE EXTENSION pointcloud,pointcloud-postgis
-					_add the dummy point schema ("simple 4-dimensional schema ")
-					_execute "SELECT PC_AsTExt(PC_MakePoint(1, ARRAY[-127, 45, 124.0, 4.0]));" to test pointcloud
-					_execute "SELECT PC_MakePoint(1, ARRAY[-127, 45, 124.0, 4.0])::geometry" to test pointcloud-postgis
-			
-			_getting the scipts to make it works
-				_you will need SQL script and sh script, they are in the folder "script"
-				_sql script ought to be executed command by command using pgadmin, so as to control results
-				_sh scripts requires parameter and should be launched approprietly
-				_you have manually launch script in the right order
-			
-			_(optionnal) getting the modified version of RPly
-				_ I modified RPly so as to use it to send pointcloud data directly into postgres
-				_ the source code is in RPly_Ubuntu folder
-				_to compile it : make
-				_NOTE : warning : this code may cause troubles on windows
-				
+		Update the system (`sudo apt-get update`)
+*Install and configure Postgres 9.2
+	* Postgres 9.2 setup
+		* the process should be like this	
+			* getting postgres 9.2
+				* add the postgres repository (apt.postgresql.org , [instructions here](http://wiki.postgresql.org/wiki/Apt#PostgreSQL_packages_for_Debian_and_Ubuntu) )
+				* install the 9.2 binary for your linux
+				* install the 9.2 dev packages for your linux
+			* setup of postgres
+				* set password for postgres user (`sudo passwd postgres` ; `su - postgres` ; `psql -c"alter user postgres with password 'postgres';"`)
+				* change the `kernel.shmmax` of your system 
+					* edit the `/etc/sysctl.conf` and add line `"kernel.shmmax = "XXX`, you may add several other kernel.sh parameters
+				* config files :  , Config files are in '/etc/postgres/9.2/main' , refere to [postgres manual](http://www.postgresql.org/docs/9.2/static/runtime-config.html)
+					* postgres.conf
+						* you have to tune at least `"shared_buffers"` ,  `"wal_buffers"` ,`"work_mem"` , `"maintenance_work_mem"` ,`"checkpoint_segments"` ,`"effective_cache_size"`
+						* you have to change the parameter `listen_adresses` or you won't be able to reach the server
+					* pg_hba.conf
+						* tune the parameters to allow connection trough `md5` from host
+						* tune the parameter to allow a `trust` connection for postgres from local
+				* restart server ( `sudo /etc/init.d/postgresql restart`)
+				* (optionnal) redirect your server port in the virtualbox (in Settings/network/redirect ports) to access it from outside
+				* create a database and test the server
+		* Getting Postgres extension : postgis, pointcloud, pointcloud_postgis
+			* getting postgis 2.0.3
+				* on ubuntu LTS 12.0.4 64 bits there is no packages for postgres 9.2, so we need to build from sources
+				* getting postgis dependecies
+					* building is easy if we don't have to build the postgis dependency :GEOS, Proj.4, GDAL, LibXML2 and JSON-C.
+					* add the repository https://launchpad.net/~ubuntugis/+archive/ppa/ and https://launchpad.net/~ubuntugis/+archive/ubuntugis-unstable
+					* get from these repository the packages of depencies
+				* compiling postgis
+					* it is very straight forward
+					* dl sources
+					* execute `./configure`, you may need to install the command called by executing `./configure`
+					* execute `"make` and `sudo make install`
+				* testing postgis
+					* in a db add postgis extension `CREATE EXTENSION Postgis`, and try the function `SELECT PostGIS_full_version();`
+			* getting pointcloud
+				* getting pointcloud dependencies
+					* you will need "CUnit", which you can found in repository
+				* compiling pointcloud
+					* dl the sources from the [git repository](https://github.com/pramsey/pointcloud)
+					* run `./autogen.sh` , then `./configure`, then `make`, then `sudo make install`
+				* testing pointcloud
+					* in a database, `CREATE EXTENSION pointcloud,pointcloud-postgis`
+					* add the dummy point schema ("simple 4-dimensional schema ")
+					* execute `SELECT PC_AsTExt(PC_MakePoint(1, ARRAY[-127, 45, 124.0, 4.0]));` to test pointcloud
+					* execute `SELECT PC_MakePoint(1, ARRAY[-127, 45, 124.0, 4.0])::geometry;` to test pointcloud-postgis
+		* (semi_optionnal) Compile RPly_convert
+			* (optionnal) getting the modified version of RPly
+				* I modified RPly so as to use it to send pointcloud data directly into postgres
+				* the source code is in RPly_Ubuntu folder
+				* to compile it : `make`
+				* *NOTE : warning : this code may cause troubles on windows*
+		* Get the scripts to make it works
+			* you will need SQL scripts and sh scripts, they are in the folder "script"
+			* __sql scripts ought to be executed command by command using pgadmin, so as to control results__
+			* sh scripts requires parameter and should be launched approprietly
+			* see the following for use-instruction 
+
+
+##How to use default##
+----------------------
+
+A demo is included in this project :
+* Download the Git sources
+* unzip it
+* Follow the install process to install every necessary tools
+
+>Before going on, all the necessary tools should work :
+>>Postgres : you should be able to create database, schema, and have plsql
+>>postgres user local permission : try to run a psql command while connected as postgres to see if all the permissions are right (``su postgres`, `psql -d _your_database_ -p 5432 -c "SELECT Version();"`)
+>>postgis
+>>pointcloud
+>>pointcloud_postgis
+>>the RPly_convert programm 
+
+
+##How to tweak to your perticular use case##
+----------------------				
+
+### Working with your own point attributes ###
+
+### Loading from other file type than binary ply ###
 
 ## HOWTO LOAD POINT CLOUD INTO DATABASE ##
 	
