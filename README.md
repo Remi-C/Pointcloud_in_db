@@ -54,7 +54,8 @@ A nex approach has been to put this point in Data Base and use advanced indexing
 3. How to install
 4. How to use default
 5. How to tweak to your perticular use case
-6. Licence summary
+6. Technical details
+7. Licence summary
 
 ##How does it works (short)##
 -----------------------------
@@ -348,51 +349,97 @@ To load and use your own point type (meaning a lidar point with any attributes) 
 * scripts : 
 	* `1_Preparing_DB_before_load.sql`
 		* Add an entry to the `pointcloud_formats` table with your own data schema
-		* Create a patch table using right patch definition
+		* Create a patch table using right patch definition (PCPATCH(N), where N is the pcid of your schema)
 	* `parallel_import_into_db.sh`
 		* Change at least the data folder to match the data where your data is
 		* change the `pointschema` to your custom schema
 	* `sequential_import_into_db.sh`
 		* Change the definition of temporary table (sql CREATE TABLE), the columns must match exactly you point attributes
-		* Change the way the patches are created, as there is a hardcoded list of attributes here
+		* Change the way the patches are created, as there is a hardcoded list of attributes here, and the pcid is also hardcoded
 		* 
 	* `3_tuning_table_after_load.sql`
-		
+		* You may want custom indexes about some of your attributes.
 	
 
 ### Loading from other file type than binary ply ###
 
-The solution can be easily adapted to work with point data other than binary ply.
+*The solution can be easily adapted to work with point data other than binary ply.*
 Supposing that you have a programm converting you point into a stream of ascii values,
-you just have to change the parameter `programmplytoascii` in the `parallel_import_into_db.sh` to give your programm.
+you just have to echange the parameter `programmplytoascii` in the `parallel_import_into_db.sh` to give your programm.
+This project assume you have several points files so to be able to load theim in parallel. If you have one big file you can use the `man split` commande to split it into several files.
 
-_TIP : if you point are already in csv format, you can use a linux command to stream it (like `cat` or `sed`)
-If you use the las format, there is a las2txt utility, you need to remove the header
-You could also use the [PDAL project](http://www.pointcloud.org/), altought still in alpha release_
+If you want to change more deeply the way data is loaded you need to edit the script `one_file_import_into_db.sh`. This way you can for example load binary data with [pg_bulkload](http://pgbulkload.projects.pgfoundry.org/)
+
+_TIP : if you point are already in csv format, you can use a linux command to stream it to the psql COPY process (like `cat` or `sed`)._
+If you use the .las format, there is a las2txt utility, you will need to remove the header
+You could also use the [PDAL project](http://www.pointcloud.org/), alltought still in alpha release
 
 
 ### Using different kind of partitions for your patches ###
+
 The demo use a partition by cubic meter
 Here are some tips to use other
-	--partition by 0.5*0.5*0.5 cubic meter
-	--partition using an irregular grid (Postgis)
-	--partition by 100 Millisecond on acquisition time
-	
-	--multi scale partition :
-		--first partition by cubic meter, then partition by 5*5*5 cubic meter the patches containing less than 5 points
+*   
+	* partition by 0.5*0.5*0.5 cubic meter
+	`GROUP BY 0.5*ROUND(2*ST_X(point::geometry)),0.5*ROUND(2*ST_Y(point::geometry)),0.5*ROUND(2*ST_Z(point::geometry))`
+	>Or 
+		* `GROUP BY 0.5*ROUND(2*PC_Get(point,'x')),0.5*ROUND(2*PC_Get(point,'y')),0.5*ROUND(2*PC_Get(point,'z'))`
+	* partition using an irregular grid (Postgis)
+		* `GROUP BY ST_SnapToGrid(point::geometry,5,4)`
+	* partition by 100 Millisecond on acquisition time
+		* `GROUP BY ROUND(1000*PC_Get(point,'gps_time')/100)`
+	* multi scale partition :
+		- first partition by cubic meter, then partition by 5*5*5 cubic meter the patches containing less than 5 points
+		
 @TODO		
+
+##Technical details##
+-------------------
+
+About performances:
+	* Loading
+		* if you have binary data use pg_bulkload to accelerate things
+		* The query to make patch will be much faster with fewer points , so it may be interessting to split your points into small files.
+	* querying 
+	* Server
+
+* Details on architecture choices
+		* We assumed that querying a database table can be fast, if _there are indexes_ and _the table is not too big_.
+			* the cost of building/storing/maintaining indexes strongly depends on the number of rows in a table, therefore we cannot store billions of points as billions of lines. This lead to the idea that we have to regoup points.
+			* The way we regroup points is directly linked to the way we would like to get points. If we intend to find points near something or in a certain area, we should group points _spatially_. If we intend to get all points that have been acquired between Time T and T+X, we should group points _temporally_. If we intend to get points sharing a common property (like intensity), we could group by _attributes_ . To a certain extend it can be efficient to query points using several criterias.
+			* For the use case we tested, the time of acquisition is somewhat linked to the position, as points acquired around the same time tend to be relatively close together. Therefore it can be efficient to filter by time of acquisition on small spattialy grouped points.
+
+* Why the number of row should be kept low ?
+	* The way postgres works it is more efficient that when querying a table, this table index fit into the server memory. If the table fit also into memory it is even better
+	* We have to take into concern update/insert/delete (cost, lock).
+
+* The alternatives
+	* The problem of having lots of data and querying efficiently in postgres can be reduced to "not having one table with too many rows". So either we split the table into several smaller table, or we regroup row to lessen the count.
+		* The classical solution is [table partitionning](http://www.postgresql.org/docs/9.2/static/ddl-partitioning.html), that is split the table to several smaller table, while using the postgres inheritance feature. This mean that all the tables are children to one master table, representing all the data.  This is used with great success, but has several cons. __In short, a lot of work is rejected upon the user__ 
+			* First, when querying the master table, in order for the server to not look into every inherited tables (which would not scale, and would keep from getting indexes into memory), we need to define constraint so the query planner can skip whole table. The power of table partitionning therefore relies in the constraints we define on inherited table. For instances, We could decide that table 1 correspond to one area, table 2 to another area, and so on.
+			* So to make it works, we have to manually taking car of constraints for every table, meaning enforcing it and updating it. This may be a lot of work, and slow operations
+			* Currently, postgres can't handle insert or update in the master table, meaning it's up to the user to deal with it. SO if we want to change a point attribute, we have to programmaticaly find in which table it is, then adapt the query to update it in this table. This can be done using rewritting rules, but is again a lot's of work.
+			* Lastly, __we are generally not interested in one point!__ , so why bother creating and maintaining a complexe system to get point by point when we generaly want to work with hundreds thousands?
+		* The other solution is to regroup rows so to have fewer rows which will be larger. Using this solution we have to deal with the maximum row size issue.
+			* The maximum row size is user defined and is around 8kByte, that means between 100 and 300 points. Therefore a multi-billion points acquisition would take several tens of billions rows, which is too much.
+			* Therefore to be able to scall, we have to use an internal feature of postgres which is the TOAST table. When storing more than the maximum size allowed per row, postgres will store the object in a toast table, which can be seen as a shadow table, as it is totally transparent to the user.
+			* With previous version of postgres it could have been a problem as when filtering a row, the row was read. This could have been very performance-consuming with large rows. This is why we chose the 9.2 postgres version, where index only scan where introduced. In short : postgres tries not to read the row when it doesn't need it. This guarantee good performances.
+ 
+
+
 
 
 ##Licence summary##
 -------------------
+This project is licensed under the [LGPL license](http://en.wikipedia.org/wiki/GNU_Lesser_General_Public_License)
 
 
 |                              | licence                                   | 
 | ---------------------------- | ----------------------------------------: |
-|  this project                |                                           |
-|  Postgres                    | Postgres licence                          |
-|  Postgis                     | Postgis licence                           |
-|  Pointcloud                  | Pointcloud licence                        |
+|  this project                | LGPL                                      |
+|  Postgres                    | [Postgres licence](http://www.postgresql.org/about/licence/) (BSD-like)               |
+|  Postgis                     | GPL                                       |
+|  Pointcloud                  | BSD                                       |
 |  RPly                        | MIT licence                               |
 
 
