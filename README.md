@@ -421,11 +421,16 @@ About performances:
 			* Currently, postgres can't handle insert or update in the master table, meaning it's up to the user to deal with it. SO if we want to change a point attribute, we have to programmaticaly find in which table it is, then adapt the query to update it in this table. This can be done using rewritting rules, but is again a lot's of work.
 			* Lastly, __we are generally not interested in one point!__ , so why bother creating and maintaining a complexe system to get point by point when we generaly want to work with hundreds thousands?
 		* The other solution is to regroup rows so to have fewer rows which will be larger. Using this solution we have to deal with the maximum row size issue.
-			* The maximum row size is user defined and is around 8kByte, that means between 100 and 300 points. Therefore a multi-billion points acquisition would take several tens of billions rows, which is too much.
+			* The maximum row size is user defined and is around 8kByte, that means between 100 and 300 points. Therefore a multi-billion points acquisition would take several tens of millions rows, which is too much.
 			* Therefore to be able to scall, we have to use an internal feature of postgres which is the TOAST table. When storing more than the maximum size allowed per row, postgres will store the object in a toast table, which can be seen as a shadow table, as it is totally transparent to the user.
-			* With previous version of postgres it could have been a problem as when filtering a row, the row was read. This could have been very performance-consuming with large rows. This is why we chose the 9.2 postgres version, where index only scan where introduced. In short : postgres tries not to read the row when it doesn't need it. This guarantee good performances.
+			* With previous version of postgres it could have been a problem as when filtering a row, the row was read. This could have been very performance-consuming with large rows. This is why we chose the 9.2 postgres version, where index only scan where introduced. In short : postgres tries not to read the row when it doesn't need it. This guarantees good performances.
  
 
+* Balance between row size/patch size/table size/data compression
+	* It may be interesting to try to keep row size under the max row size limit, so as to avoid to use toast table. In the same way the max row size could be increased.
+	* the distribution of the number of points in patch could be studied, as having almost emptu patches is not efficient for querying (increase the number of rows) and for compression (points in patch are compressed)
+	* the toast table is compressed by postgres, it could be intersting to turn this off. In our experiment it was not worth it as the time gained on compressing/uncompressing is less than the additionnal time to read/write bigger data.
+	* the patches are compressed, we didn't notice faster processing while storing it uncompressed. This may be however very implementation dependant.
 
 
 
