@@ -13,7 +13,7 @@ We propose an efficient and parallel way to load data into base, a way to group 
 We propose a mixe of different open source project to store and use efficiently very large amounts of Lidar points into a database.
 
 * massive point clouds are loaded efficently into a postgres data base
-* this point clouds are stored using the pointcloud extension by P.Ramsey, 1 table per pointcloud, several hundreds points per line.
+* this point clouds are stored using the [pointcloud extension by P.Ramsey](https://github.com/pramsey/pointcloud), 1 table per pointcloud, several hundreds points per line.
 * we use Postgis extension to build indexes for fast query of point clouds
 * the point clouds can then be used and exported to a webgl viewer / another tool
 
@@ -74,7 +74,7 @@ __Abstract__ :
 
 * _Creating points and grouping close points into patch_ :
 	
->e create points from temporary table and group it (with a spatial criteria : by cubic meter) to form patches. This PCPATCH are written in the patch table where the totality of the pointcloud will be stored.
+>We create points from temporary table and group it (with a spatial criteria : by cubic meter) to form patches. Patches are a new type defined by the [pointcloud extension](https://github.com/pramsey/pointcloud) This PCPATCH are written in the patch table where the totality of the pointcloud will be stored.
 >The point must respect a user-defined schema (see table pointcloud_formats).
 		
 * _Working with the points_
