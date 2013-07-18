@@ -1,0 +1,572 @@
+﻿/***************************
+*Rémi C
+*19/06/2013
+*Thales TTS / IGN Matis-Cogit
+*This script is a proof of concept about storing massive point cloud into postgres DB using the pointcloud extension
+*This script is part of a semi automated process and cannot be executed as a whole, but command by command to check result
+*This script prepare the database for the import of point cloud
+***************************/
+
+/***
+*Script abstract : 
+*_Install / check that necessary tools are installed
+*_Creating a dedicated postgres schema
+*_Creating XML schema for the point we are going to load
+*_Creating patch table which will store the pointcloud at the end of the import
+***/
+
+--WARNING : this script should be executed commande by commande. Repeating commands will return errors but won't affect the state of the system.
+
+--▓▒░Checking that necessary tools are installed▓▒░--
+	----
+	--Is Postgis installed ? Should return something like version > 2.0.3. If error : execute "CREATE EXTENSION postgis"
+	SELECT * FROM PostGIS_Full_Version();
+
+	--Checking that PointCloud is installed
+		--First we create a dummy schema for minimal points
+		INSERT INTO pointcloud_formats (pcid, srid, schema) VALUES (1, 0, 
+			'<?xml version="1.0" encoding="UTF-8"?>
+			<pc:PointCloudSchema xmlns:pc="http://pointcloud.org/schemas/PC/1.1" 
+				xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+			  <pc:dimension>
+				<pc:position>1</pc:position>
+				<pc:size>4</pc:size>
+				<pc:description>X coordinate as a long integer. You must use the 
+						scale and offset information of the header to 
+						determine the double value.</pc:description>
+				<pc:name>X</pc:name>
+				<pc:interpretation>int32_t</pc:interpretation>
+				<pc:scale>0.01</pc:scale>
+			  </pc:dimension>
+			  <pc:dimension>
+				<pc:position>2</pc:position>
+				<pc:size>4</pc:size>
+				<pc:description>Y coordinate as a long integer. You must use the 
+						scale and offset information of the header to 
+						determine the double value.</pc:description>
+				<pc:name>Y</pc:name>
+				<pc:interpretation>int32_t</pc:interpretation>
+				<pc:scale>0.01</pc:scale>
+			  </pc:dimension>
+			  <pc:dimension>
+				<pc:position>3</pc:position>
+				<pc:size>4</pc:size>
+				<pc:description>Z coordinate as a long integer. You must use the 
+						scale and offset information of the header to 
+						determine the double value.</pc:description>
+				<pc:name>Z</pc:name>
+				<pc:interpretation>int32_t</pc:interpretation>
+				<pc:scale>0.01</pc:scale>
+			  </pc:dimension>
+			  <pc:dimension>
+				<pc:position>4</pc:position>
+				<pc:size>2</pc:size>
+				<pc:description>The intensity value is the integer representation 
+						of the pulse return magnitude. This value is optional 
+						and system specific. However, it should always be 
+						included if available.</pc:description>
+				<pc:name>Intensity</pc:name>
+				<pc:interpretation>uint16_t</pc:interpretation>
+				<pc:scale>1</pc:scale>
+			  </pc:dimension>
+			  <pc:metadata>
+				<Metadata name="compression">dimensional</Metadata>
+			  </pc:metadata>
+			</pc:PointCloudSchema>');
+		--second we try to create a point using this schema : it should return the point. If not, execute "CREATE EXTENSION pointcloud"
+		SELECT PC_AsText(PC_MakePoint(1, ARRAY[-127.258, 45.258, 124.157, 4.0])); 
+
+	--Checking that the point_cloud --> postgis module works : it should return a psotgis point in text. If not working, execute "CREATE EXTENSION pointcloud_postgis;"	
+	SELECT ST_AsText(PC_MakePoint(1, ARRAY[-127.258, 45.258, 124.157, 4.0])::geometry); 
+
+	
+--▓▒░Creating a dedicated postgres schema▓▒░--
+	--Deleting the schema if it already exists
+	DROP SCHEMA IF EXISTS acquisition_tmob_012013;
+	--creating the schema
+	CREATE SCHEMA acquisition_tmob_012013;
+
+	
+--▓▒░Creating the XML schema corresponding to points acquired by a Riegl Laser and a Velodyn Laser▓▒░--
+
+
+	----
+	--Adding a text descriptor to the pointcloud_formats table to ease human interpretation
+	ALTER TABLE pointcloud_formats ADD COLUMN nom_schema text;
+	
+	----
+	--Creating a XML schema for the Velodyn Laser :
+		INSERT INTO pointcloud_formats (pcid, srid, nom_schema) VALUES (3, 0,'Velo_nouvelle_acquisition_TMobilita_Janvier_2013');--On crée un nouveau schema
+		--On va remplir ce nouveau schéma
+		UPDATE public.pointcloud_formats SET schema = 
+		$$<?xml version="1.0" encoding="UTF-8"?><!-- VELODYN schema-->
+			<!-- ply header  : 
+				property float64 GPS_time
+				property uint16 range 
+				property uint8 intensity 
+				property uint16 theta 
+				property uint16 block_id 
+				property uint8 fiber 
+				property float32 x_laser
+				property float32 y_laser
+				property float32 z_laser
+				property float32 x 
+				property float32 y 
+				property float32 z 
+				property float32 x_centre_laser
+				property float32 y_centre_laser
+				property float32 z_centre_laser
+			-->
+			<pc:PointCloudSchema xmlns:pc="http://pointcloud.org/schemas/PC/1.1" 
+			    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+			  <pc:dimension>
+			    <pc:position>1</pc:position>
+			    <pc:size>8</pc:size>
+			    <pc:description>le temps GPS du moement de l acquisition du points. Note : il faudrait utiliser l offset et s assurer qu il n y a pas de decallage</pc:description>
+			    <pc:name>gps_time</pc:name>
+			    <pc:interpretation>double</pc:interpretation>
+			    <pc:scale>0.00000001</pc:scale>
+				<pc:offset>0</pc:offset>
+			  </pc:dimension>
+			  
+			  <!--parametres acquisition : echo_range, intensity, theta, block id , fiber-->
+			  <pc:dimension>
+			    <pc:position>2</pc:position>
+			    <pc:size>2</pc:size>
+			    <pc:description>echo_range : valeur de temps de vol du retour de l echo laser
+						Entre 0 et 60k
+				</pc:description>
+			    <pc:name>echo_range</pc:name>
+			    <pc:interpretation>UnsignedInteger </pc:interpretation>
+			    <pc:scale>1</pc:scale>
+				<pc:offset>0</pc:offset>
+			</pc:dimension>
+			
+			<pc:dimension>
+			    <pc:position>3</pc:position>
+			    <pc:size>1</pc:size>
+			    <pc:description>intensity : valeur de l intensite du retour laser
+						Entre 0 et 255
+				</pc:description>
+			    <pc:name>intensity</pc:name>
+			    <pc:interpretation>UnsignedInteger </pc:interpretation>
+			    <pc:scale>1</pc:scale>
+				<pc:offset>0</pc:offset>
+			  </pc:dimension>
+
+			<pc:dimension>
+			    <pc:position>4</pc:position>
+			    <pc:size>2</pc:size>
+			    <pc:description>theta : valeur de l angle entre le plan horizontale et le rayon d acquisition
+						Entre 0 et 60k
+				</pc:description>
+			    <pc:name>theta</pc:name>
+			    <pc:interpretation>UnsignedInteger </pc:interpretation>
+			    <pc:scale>1</pc:scale>
+				<pc:offset>0</pc:offset>
+			</pc:dimension>
+			
+			<pc:dimension>
+			    <pc:position>5</pc:position>
+			    <pc:size>2</pc:size>
+			    <pc:description>block_id : A quoi ça sert?? : seulement deux valeurs distinctes
+				</pc:description>
+			    <pc:name>vlock_id</pc:name>
+			    <pc:interpretation>UnsignedInteger </pc:interpretation>
+			    <pc:scale>1</pc:scale>
+				<pc:offset>0</pc:offset>
+			</pc:dimension>
+
+			<pc:dimension>
+			    <pc:position>6</pc:position>
+			    <pc:size>1</pc:size>
+			    <pc:description>intensity : numero de la fibre qui a fait l acquisition
+						Entre 0 et 64
+				</pc:description>
+			    <pc:name>fiber</pc:name>
+			    <pc:interpretation>UnsignedInteger </pc:interpretation>
+			    <pc:scale>1</pc:scale>
+				<pc:offset>0</pc:offset>
+			  </pc:dimension>
+
+
+			<!--les points acquis dans le repère du laser :x_laser, y_laser, z_laser -->
+			<pc:dimension>
+			    <pc:position>7</pc:position>
+			    <pc:size>4</pc:size>
+			    <pc:description>Coordonnées X du point dans le repère relatif du laser, en metre</pc:description>
+			    <pc:name>x_laser</pc:name>
+			    <pc:interpretation>float </pc:interpretation>
+			    <pc:scale>0.001</pc:scale>
+				<pc:offset>0</pc:offset>
+			  </pc:dimension>
+			  <pc:dimension>
+			    <pc:position>8</pc:position>
+			    <pc:size>4</pc:size>
+			    <pc:description>Coordonnées Y du point dans le repère relatif du laser, en metre</pc:description>
+			    <pc:name>y_laser</pc:name>
+			    <pc:interpretation>float </pc:interpretation>
+			    <pc:scale>0.001</pc:scale>
+				<pc:offset>0</pc:offset>
+			  </pc:dimension>
+			  <pc:dimension>
+			    <pc:position>9</pc:position>
+			    <pc:size>4</pc:size>
+			    <pc:description>Coordonnées Z du point dans le repère relatif du laser, en metre</pc:description>
+			    <pc:name>z_laser</pc:name>
+			    <pc:interpretation>float </pc:interpretation>
+			    <pc:scale>0.001</pc:scale>
+				<pc:offset>0</pc:offset>
+			  </pc:dimension>
+
+			  
+			<!-- point acquis dans repere Lambert 93 en metre (modulo transformation) : x , y , z -->
+			 <pc:dimension>
+			    <pc:position>10</pc:position>
+			    <pc:size>5</pc:size>
+			    <pc:description>Coordonnées X du point dans le repere Lambert 93, en metre, attention a l offset</pc:description>
+			    <pc:name>x</pc:name>
+			    <pc:interpretation>double</pc:interpretation>
+			    <pc:scale>0.001</pc:scale>
+				<pc:offset>649000</pc:offset>
+			  </pc:dimension>
+			   <pc:dimension>
+			    <pc:position>11</pc:position>
+			    <pc:size>5</pc:size>
+			    <pc:description>Coordonnées Y du point dans le repere Lambert 93, en metre, attention a l offset</pc:description>
+			    <pc:name>y</pc:name>
+			    <pc:interpretation>double</pc:interpretation>
+			    <pc:scale>0.001</pc:scale>
+				<pc:offset>6840000</pc:offset>
+			  </pc:dimension>
+				<pc:dimension>
+			    <pc:position>12</pc:position>
+			    <pc:size>5</pc:size>
+			    <pc:description>Coordonnées Z du point dans le repere Lambert 93, en metre, attention a l offset</pc:description>
+			    <pc:name>z</pc:name>
+			    <pc:interpretation>double</pc:interpretation>
+			    <pc:scale>0.001</pc:scale>
+				<pc:offset>0</pc:offset>
+			  </pc:dimension>
+
+			 <!-- origine acquisition dans repere Lambert 93 en metre (modulo transformation) : x_centre_laser , y_centre_laser , z_centre_laser -->
+			 <pc:dimension>
+			    <pc:position>13</pc:position>
+			    <pc:size>5</pc:size>
+			    <pc:description>Coordonnées X du centre du laser au moment de l acquisition,  dans le repere Lambert 93, en metre, attention a l offset</pc:description>
+			    <pc:name>x_centre_laser</pc:name>
+			    <pc:interpretation>double</pc:interpretation>
+			    <pc:scale>0.001</pc:scale>
+				<pc:offset>649000</pc:offset>
+			  </pc:dimension>
+			   <pc:dimension>
+			    <pc:position>14</pc:position>
+			    <pc:size>5</pc:size>
+			    <pc:description>Coordonnées Y du centre du laser au moment de l acquisition,  dans le repere Lambert 93, en metre, attention a l offset</pc:description>
+			    <pc:name>y_centre_laser</pc:name>
+			    <pc:interpretation>double</pc:interpretation>
+			    <pc:scale>0.001</pc:scale>
+				<pc:offset>6840000</pc:offset>
+			  </pc:dimension>
+				<pc:dimension>
+			    <pc:position>15</pc:position>
+			    <pc:size>5</pc:size>
+			    <pc:description>Coordonnées Z du centre du laser au moment de l acquisition,  dans le repere Lambert 93, en metre, attention a l offset</pc:description>
+			    <pc:name>z_centre_laser</pc:name>
+			    <pc:interpretation>double</pc:interpretation>
+			    <pc:scale>0.001</pc:scale>
+				<pc:offset>0</pc:offset>
+			  </pc:dimension>
+			  <pc:metadata>
+			    <Metadata name="compression">dimensional</Metadata>
+			  </pc:metadata>
+			</pc:PointCloudSchema>
+			$$
+			WHERE nom_schema = 'Velo_nouvelle_acquisition_TMobilita_Janvier_2013';
+
+
+	----
+	--Creating the XML  schema for points acquired by a riegl laser:
+			--creating an entry for this schema
+			INSERT INTO pointcloud_formats (pcid, srid, nom_schema) VALUES (2, 0,'Riegl_nouvelle_acquisition_TMobilita_Janvier_2013');--On crée un nouveau schema
+			--Filling the entry
+			UPDATE public.pointcloud_formats SET schema = 
+			$$<?xml version="1.0" encoding="UTF-8"?>	<!-- RIEGL Laser schema -->
+			<!-- ply header:
+			ply
+				format binary_little_endian 1.0
+				element vertex 000003000000
+				property float64 GPS_time
+				property float32 x_sensor
+				property float32 y_sensor
+				property float32 z_sensor
+				property float32 x_origin_sensor
+				property float32 y_origin_sensor
+				property float32 z_origin_sensor
+				property float32 x 
+				property float32 y 
+				property float32 z 
+				property float32 x_origin
+				property float32 y_origin
+				property float32 z_origin
+				property float32 range
+				property float32 theta
+				property float32 phi
+				property uint8 num_echo
+				property uint8 nb_of_echo
+				property float32 amplitude
+				property float32 reflectance
+				property float32 deviation
+				property float32 background_radiation
+			end_header
+			-->
+			
+			<pc:PointCloudSchema xmlns:pc="http://pointcloud.org/schemas/PC/1.1" 
+			    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+			  <pc:dimension>
+			    <pc:position>1</pc:position>
+			    <pc:size>8</pc:size>
+			    <pc:description>le temps GPS du moement de l acquisition du points. Note : il faudrait utiliser l offset et s assurer qu il n y a pas de decallage</pc:description>
+			    <pc:name>GPS_time</pc:name>
+			    <pc:interpretation>double</pc:interpretation>
+			    <pc:scale>0.000001</pc:scale>
+				<pc:offset>0</pc:offset>
+			  </pc:dimension>
+			  
+			  <!-- point dans repere local-->
+			  <pc:dimension>
+			    <pc:position>2</pc:position>
+			    <pc:size>4</pc:size>
+			    <pc:description>x_sensor : coorodnnée du point dans le repere du laser, du genre qq metres</pc:description>
+			    <pc:name>x_sensor</pc:name>
+			    <pc:interpretation>float</pc:interpretation>
+			    <pc:scale>0.001</pc:scale>
+				<pc:offset>0</pc:offset>
+			  </pc:dimension>
+			  <pc:dimension>
+			    <pc:position>3</pc:position>
+			    <pc:size>4</pc:size>
+			    <pc:description>y_sensor : coorodnnée du point dans le repere du laser, du genre qq metres</pc:description>
+			    <pc:name>y_sensor</pc:name>
+			    <pc:interpretation>float</pc:interpretation>
+			    <pc:scale>0.001</pc:scale>
+				<pc:offset>0</pc:offset>
+			  </pc:dimension>
+			    <pc:dimension>
+			    <pc:position>4</pc:position>
+			    <pc:size>4</pc:size>
+			    <pc:description>z_sensor : coorodnnée du point dans le repere du laser, du genre qq metres</pc:description>
+			    <pc:name>z_sensor</pc:name>
+			    <pc:interpretation>float</pc:interpretation>
+			    <pc:scale>0.001</pc:scale>
+				<pc:offset>0</pc:offset>
+			  </pc:dimension>
+
+			  
+			  <!-- origine du senseur dans repere local-->
+			  <pc:dimension>
+			    <pc:position>5</pc:position>
+			    <pc:size>4</pc:size>
+			    <pc:description>x_origin_sensor : coorodnnée de la position du laser au moment de l acquisition dans le  point dans le repere du laser, du genre qq centimetre : decrit une hellicoide</pc:description>
+			    <pc:name>x_origin_sensor</pc:name>
+			    <pc:interpretation>float</pc:interpretation>
+			    <pc:scale>0.00001</pc:scale>
+				<pc:offset>0</pc:offset>
+			  </pc:dimension>
+			    <pc:dimension>
+			    <pc:position>6</pc:position>
+			    <pc:size>4</pc:size>
+			    <pc:description>y_origin_sensor : coorodnnée de la position du laser au moment de l acquisition dans le  point dans le repere du laser, du genre qq centimetre : decrit une hellicoide</pc:description>
+			    <pc:name>y_origin_sensor</pc:name>
+			    <pc:interpretation>float</pc:interpretation>
+			    <pc:scale>0.00001</pc:scale>
+				<pc:offset>0</pc:offset>
+			  </pc:dimension>
+			    <pc:dimension>
+			    <pc:position>7</pc:position>
+			    <pc:size>4</pc:size>
+			    <pc:description>z_origin_sensor : coorodnnée de la position du laser au moment de l acquisition dans le  point dans le repere du laser, du genre qq centimetre : decrit une hellicoide</pc:description>
+			    <pc:name>z_origin_sensor</pc:name>
+			    <pc:interpretation>float</pc:interpretation>
+			    <pc:scale>0.00001</pc:scale>
+				<pc:offset>0</pc:offset>
+			  </pc:dimension>
+			 
+			 <!-- point dans repere Lambert 93 en metre (modulo transformation)-->
+			 <pc:dimension>
+			    <pc:position>8</pc:position>
+			    <pc:size>5</pc:size>
+			    <pc:description>Coordonnées X du point dans le repere Lambert 93, en metre, attention a l offset</pc:description>
+			    <pc:name>x</pc:name>
+			    <pc:interpretation>double</pc:interpretation>
+			    <pc:scale>0.001</pc:scale>
+				<pc:offset>649000</pc:offset>
+			  </pc:dimension>
+			   <pc:dimension>
+			    <pc:position>9</pc:position>
+			    <pc:size>5</pc:size>
+			    <pc:description>Coordonnées Y du point dans le repere Lambert 93, en metre, attention a l offset</pc:description>
+			    <pc:name>y</pc:name>
+			    <pc:interpretation>double</pc:interpretation>
+			    <pc:scale>0.001</pc:scale>
+				<pc:offset>6840000</pc:offset>
+			  </pc:dimension>
+				<pc:dimension>
+			    <pc:position>10</pc:position>
+			    <pc:size>5</pc:size>
+			    <pc:description>Coordonnées Z du point dans le repere Lambert 93, en metre, attention a l offset</pc:description>
+			    <pc:name>z</pc:name>
+			    <pc:interpretation>float</pc:interpretation>
+			    <pc:scale>0.001</pc:scale>
+				<pc:offset>0</pc:offset>
+			  </pc:dimension>
+			 
+			 
+			 <!-- origine du senseur dans repere Lambert93 (modulo translation)-->
+			 <pc:dimension>
+			    <pc:position>11</pc:position>
+			    <pc:size>5</pc:size>
+			    <pc:description>Coordonnées X du senseur dans le repere Lambert 93, en metre, attention a l offset</pc:description>
+			    <pc:name>x_origin</pc:name>
+			    <pc:interpretation>float</pc:interpretation>
+			    <pc:scale>0.0001</pc:scale>
+				<pc:offset>649000</pc:offset>
+			  </pc:dimension>
+			<pc:dimension>
+			    <pc:position>12</pc:position>
+			    <pc:size>5</pc:size>
+			    <pc:description>Coordonnées Y du senseur dans le repere Lambert 93, en metre, attention a l offset</pc:description>
+			    <pc:name>y_origin</pc:name>
+			    <pc:interpretation>float</pc:interpretation>
+			    <pc:scale>0.0001</pc:scale>
+				<pc:offset>6840000</pc:offset>
+			  </pc:dimension>
+			<pc:dimension>
+			    <pc:position>13</pc:position>
+			    <pc:size>5</pc:size>
+			    <pc:description>Coordonnées Z du senseur dans le repere Lambert 93, en metre,</pc:description>
+			    <pc:name>z_origin</pc:name>
+			    <pc:interpretation>float</pc:interpretation>
+			    <pc:scale>0.0001</pc:scale>
+				<pc:offset>0</pc:offset>
+			  </pc:dimension>
+			 
+			 
+			 <!-- mesure geom-->
+			   <pc:dimension>
+			    <pc:position>14</pc:position>
+			    <pc:size>4</pc:size>
+			    <pc:description>Valeur du temps de vol lors de lacquisition. de env 2.25 a + de 400, probablement en milli. Il faudrait determiner le scale proprement</pc:description>
+			    <pc:name>echo_range</pc:name>
+			    <pc:interpretation>float</pc:interpretation>
+			    <pc:scale>0.001</pc:scale>
+				<pc:offset>0</pc:offset>
+			  </pc:dimension>
+			  <pc:dimension>
+			    <pc:position>15</pc:position>
+			    <pc:size>4</pc:size>
+			    <pc:description>angle entre la direction d acquision et le plan horizontal, codeé entre -3 et +3 env. Il faudrait voir loffset</pc:description>
+			    <pc:name>theta</pc:name>
+			    <pc:interpretation>float</pc:interpretation>
+			    <pc:scale>0.0001</pc:scale>
+				<pc:offset>0</pc:offset>
+			  </pc:dimension>
+			    <pc:dimension>
+			    <pc:position>16</pc:position>
+			    <pc:size>4</pc:size>
+			    <pc:description>un autre angle entre la direction d acquision et ???, codé enrte -0.005 et -0.004. Il faudrait regler loffset</pc:description>
+			    <pc:name>phi</pc:name>
+			    <pc:interpretation>float</pc:interpretation>
+			    <pc:scale>0.000001</pc:scale>
+				<pc:offset>0</pc:offset>
+			  </pc:dimension>
+			  
+			 
+			  <!-- echo multiple-->
+
+			    <pc:dimension>
+			    <pc:position>17</pc:position>
+			    <pc:size>1</pc:size>
+			    <pc:description>le numero du retour dont ona tiré le point (entre 1 et 4)</pc:description>
+			    <pc:name>num_echo</pc:name>
+			    <pc:interpretation>int</pc:interpretation>
+			    <pc:scale>1</pc:scale>
+				<pc:offset>0</pc:offset>
+			  </pc:dimension>
+			    <pc:dimension>
+			    <pc:position>18</pc:position>
+			    <pc:size>1</pc:size>
+			    <pc:description>le nombre d echos obtenu par le rayon quia  donné ce point </pc:description>
+			    <pc:name>nb_of_echo</pc:name>
+			    <pc:interpretation>int</pc:interpretation>
+			    <pc:scale>1</pc:scale>
+				<pc:offset>0</pc:offset>
+			  </pc:dimension>
+			  
+			    <!-- donnees avancee-->
+			  <pc:dimension>
+			    <pc:position>19</pc:position>
+			    <pc:size>4</pc:size>
+			    <pc:description>l amplitude de l onde de retour, attention : peut etre faux lors de retour multiples</pc:description>
+			    <pc:name>amplitude</pc:name>
+			    <pc:interpretation>float</pc:interpretation>
+			    <pc:scale>0.0001</pc:scale>
+				<pc:offset>0</pc:offset>
+			  </pc:dimension>
+			  <pc:dimension>
+			    <pc:position>20</pc:position>
+			    <pc:size>4</pc:size>
+			    <pc:description>l amplitude de l onde de retour corrigee de la distance, attention : peut etre faux lors de retour multiples, attention : impropre pour classification, la corriger par formule trouveepar remi cura</pc:description>
+			    <pc:name>reflectance</pc:name>
+			    <pc:interpretation>float</pc:interpretation>
+			    <pc:scale>0.0001</pc:scale>
+				<pc:offset>0</pc:offset>
+			  </pc:dimension>
+			    <pc:dimension>
+			    <pc:position>21</pc:position>
+			    <pc:size>2</pc:size>
+			    <pc:description>Une grandeur que je ne connais pas, entre -1 et plusieurs dizaine de milliers , par pas de 1</pc:description>
+			    <pc:name>deviation</pc:name>
+			    <pc:interpretation>int</pc:interpretation>
+			    <pc:scale>1</pc:scale>
+				<pc:offset>0</pc:offset>
+			  </pc:dimension>
+			    <pc:dimension>
+			    <pc:position>22</pc:position>
+			    <pc:size>1</pc:size>
+			    <pc:description>Une grandeur que je ne connais pas, vaut toujours nan, on la stocke comme un entier</pc:description>
+			    <pc:name>background_radiation</pc:name>
+			    <pc:interpretation>int</pc:interpretation>
+			    <pc:scale>1</pc:scale>
+				<pc:offset>0</pc:offset>
+			  </pc:dimension>
+
+			  <pc:metadata>
+			    <Metadata name="compression">dimensional</Metadata>
+			  </pc:metadata>
+			</pc:PointCloudSchema>$$ 
+			WHERE nom_schema = 'Riegl_nouvelle_acquisition_TMobilita_Janvier_2013';
+
+
+
+--▓▒░Creating tables which will contain patches ▓▒░--
+
+	----
+	--Creating table for riegl laser, for space partitionning
+		DROP TABLE IF EXISTS acquisition_tmob_012013.riegl_pcpatch_space;
+		CREATE TABLE acquisition_tmob_012013.riegl_pcpatch_space(
+			gid SERIAL,
+			patch PCPATCH(2)
+		);
+	----
+	--Creating table for Velodyn laser, for space partitionning
+		DROP TABLE IF EXISTS acquisition_tmob_012013.velo_pcpatch_space;
+		CREATE TABLE acquisition_tmob_012013.velo_pcpatch_space(
+			gid SERIAL,
+			patch PCPATCH(3)
+		);
+
+--▓▒░End of the SQL script, now we need to launch the bash script to load data into the base▓▒░--
+--taht is , the "parallel_import_into_db.sh"
+
+
