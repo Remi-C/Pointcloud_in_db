@@ -183,8 +183,7 @@ declare -i valeurModulo=$(echo "$4" | cut -f2 -d_)
 				#importing points into temporary table
 				#Using script to load points into temp table
 				#echo "Importing points from $f file into temporary table temp_"$1"_$4_$boucle using script $5";
-				$5 temp_"$1"_$4_$boucle $f $6 $7;
-				
+				$5 temp_"$1"_$4_$boucle $f $6 "$7" ;
 			##
 			#Creating patches
 				##Creating velodyn spatial patches
@@ -195,9 +194,10 @@ declare -i valeurModulo=$(echo "$4" | cut -f2 -d_)
 					SELECT PC_MakePoint(3, ARRAY	[gps_time,echo_range,intensity,theta,block_id,fiber,x_laser,y_laser,z_laser,x,y,z,x_centre_laser,y_centre_laser,z_centre_laser] ) AS point
 					FROM  temp_"$1"_$4_$boucle AS pcr
 					) table_point
-				GROUP BY ROUND(PC_Get(point,'x')),ROUND(PC_Get(point,'y')),ROUND(PC_Get(point,'z'))
+				GROUP BY ROUND(1/2*PC_Get(point,'x')),ROUND(1/2*PC_Get(point,'y')),ROUND(1/2*PC_Get(point,'z'))
 				)
-				INSERT INTO $3 (geom, patch) SELECT to.insert.patch::geometry, to_insert.patch FROM to_insert;"
+				INSERT INTO $3 (patch) SELECT to_insert.patch FROM to_insert;";
+
 				echo "filling patch table $3 with spatial patch created from points from temp_"$1"_$4_$boucle";
 				$7 -c "$commande_sql";
 				
@@ -218,7 +218,6 @@ declare -i valeurModulo=$(echo "$4" | cut -f2 -d_)
 		boucle=$boucle+1;
 	done
 exit 0
-
 
 
 
