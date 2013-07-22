@@ -194,7 +194,8 @@ declare -i valeurModulo=$(echo "$4" | cut -f2 -d_)
 					SELECT PC_MakePoint(3, ARRAY	[gps_time,echo_range,intensity,theta,block_id,fiber,x_laser,y_laser,z_laser,x,y,z,x_centre_laser,y_centre_laser,z_centre_laser] ) AS point
 					FROM  temp_"$1"_$4_$boucle AS pcr
 					) table_point
-				GROUP BY ROUND(1/2*PC_Get(point,'x')),ROUND(1/2*PC_Get(point,'y')),ROUND(1/2*PC_Get(point,'z'))
+				
+				GROUP BY ROUND(PC_Get(point,'x')*1/2),ROUND(PC_Get(point,'y')*1/2),ROUND(PC_Get(point,'z')*1/2)
 				)
 				INSERT INTO $3 (patch) SELECT to_insert.patch FROM to_insert;";
 
