@@ -67,9 +67,16 @@ _...
 			USING GIST ( acquisition_tmob_012013.rc_compute_range_for_a_patch(patch,'gps_time'));
 
 
+--▓▒░creating index on num points in patch▓▒░--
 
-
-
+	--num points per patch on riegl
+		CREATE INDEX acquisition_tmob_012013_riegl_pcpatch_num_points_perpatch
+			ON acquisition_tmob_012013.riegl_pcpatch_space
+			(PC_NumPoints(patch));
+	--num points per patch on velodyn
+		CREATE INDEX acquisition_tmob_012013_velo_pcpatch_num_points_perpatch
+			ON acquisition_tmob_012013.velo_pcpatch_space
+			(PC_NumPoints(patch));
 
 
 			

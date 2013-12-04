@@ -555,14 +555,14 @@
 	--Creating table for riegl laser, for space partitionning
 		DROP TABLE IF EXISTS acquisition_tmob_012013.riegl_pcpatch_space;
 		CREATE TABLE acquisition_tmob_012013.riegl_pcpatch_space(
-			gid SERIAL,
+			gid SERIAL PRIMARY KEY,
 			patch PCPATCH(2)
 		);
 	----
 	--Creating table for Velodyn laser, for space partitionning
 		DROP TABLE IF EXISTS acquisition_tmob_012013.velo_pcpatch_space;
 		CREATE TABLE acquisition_tmob_012013.velo_pcpatch_space(
-			gid SERIAL,
+			gid SERIAL PRIMARY KEY,
 			patch PCPATCH(3)
 		);
 
