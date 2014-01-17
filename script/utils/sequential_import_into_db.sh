@@ -217,9 +217,6 @@ declare -i valeurModulo=$(echo "$4" | cut -f2 -d_)
 			echo "";
 		fi 
 		boucle=$boucle+1;
-		#NOTE : @WARNING @TEMP @TODO @TEST 
-		#for test:  not allowing loop
-		exit 0 ; 
 		
 	done
 exit 0

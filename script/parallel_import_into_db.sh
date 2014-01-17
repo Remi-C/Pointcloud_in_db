@@ -44,7 +44,7 @@
 		declare programmplytoascii="../RPly_Ubuntu/bin/RPly_convert";	
 	#command to connect to the database: default "psql -d test_pointcloud -p 5432" 
 		#Warning : do not ad -h, or postgres will connect using TCP (thus needing a password)
-		declare psql_commande="psql -d tmob -p 5433";
+		declare psql_commande="psql -d test_pointcloud -p 5433";
 
 	
 #UI
