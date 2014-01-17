@@ -63,7 +63,7 @@ echo "loading data from "$2" into temp table "$1" ";
 #Data Processing
 
 #Deleting/Creating fifo
-rm /tmp/pipe_ply_binaire_vers_ply_ascii_"$1";
+rm -f /tmp/pipe_ply_binaire_vers_ply_ascii_"$1";
 mkfifo --mode=0666 /tmp/pipe_ply_binaire_vers_ply_ascii_"$1";
 
 #attempting to copy from file into table : careful , file column must match table column

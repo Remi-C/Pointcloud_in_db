@@ -125,7 +125,7 @@ declare -i valeurModulo=$(echo "$4" | cut -f2 -d_)
 
 				$5 temp_"$1"_$4_$boucle $f $6 "$7" ;
 				
-				
+			
 			##
 			#Creating patches
 				##Creating riegl patches
@@ -134,10 +134,10 @@ declare -i valeurModulo=$(echo "$4" | cut -f2 -d_)
 				WITH to_insert AS (
 				SELECT PC_patch(point) AS patch
 				FROM (
-					SELECT PC_MakePoint(2, ARRAY[gps_time,x_sensor,y_sensor,z_sensor,x_origin_sensor,y_origin_sensor,z_origin_sensor,x,y,z,x_origin,y_origin,z_origin,echo_range,theta,phi,num_echo,nb_of_echo,amplitude,reflectance,deviation,background_radiation::float] ) AS point
+					SELECT x,y,z,PC_MakePoint(2, ARRAY[gps_time,x_sensor,y_sensor,z_sensor,x_origin_sensor,y_origin_sensor,z_origin_sensor,x,y,z,x_origin,y_origin,z_origin,echo_range,theta,phi,num_echo,nb_of_echo,amplitude,reflectance,deviation,background_radiation::float] ) AS point
 					FROM  temp_"$1"_$4_$boucle AS pcr
 					) table_point
-				GROUP BY ROUND(PC_Get(point,'x')),ROUND(PC_Get(point,'y')),ROUND(PC_Get(point,'z'))
+				GROUP BY ROUND(z),ROUND(x),ROUND(y)
 				)
 				INSERT INTO $3 (patch) SELECT to_insert.patch FROM to_insert;";
 				$7 -c "$commande_sql";
@@ -191,11 +191,11 @@ declare -i valeurModulo=$(echo "$4" | cut -f2 -d_)
 				WITH to_insert AS (
 				SELECT PC_patch(point) AS patch
 				FROM (
-					SELECT PC_MakePoint(3, ARRAY	[gps_time,echo_range,intensity,theta,block_id,fiber,x_laser,y_laser,z_laser,x,y,z,x_centre_laser,y_centre_laser,z_centre_laser] ) AS point
+					SELECT x,y,z,PC_MakePoint(3, ARRAY	[gps_time,echo_range,intensity,theta,block_id,fiber,x_laser,y_laser,z_laser,x,y,z,x_centre_laser,y_centre_laser,z_centre_laser] ) AS point
 					FROM  temp_"$1"_$4_$boucle AS pcr
 					) table_point
 				
-				GROUP BY ROUND(PC_Get(point,'x')*1/2),ROUND(PC_Get(point,'y')*1/2),ROUND(PC_Get(point,'z')*1/2)
+				GROUP BY ROUND( z *1/2),ROUND( x *1/2),ROUND( y *1/2)
 				)
 				INSERT INTO $3 (patch) SELECT to_insert.patch FROM to_insert;";
 
@@ -207,7 +207,7 @@ declare -i valeurModulo=$(echo "$4" | cut -f2 -d_)
 
 				commande_sql="DROP TABLE IF EXISTS temp_"$1"_$4_$boucle;"
 				echo "the patch table $3 has been filled with patch based on points from $f, deleting the useless temp temp_"$1"_$4_$boucle  table";
-				$7 -c "$commande_sql";
+			#s	$7 -c "$commande_sql";
 			else 
 				echo "Not doing anything : you have to specify correctly the parameter 1 : "$1"";
 			fi 	
@@ -217,6 +217,10 @@ declare -i valeurModulo=$(echo "$4" | cut -f2 -d_)
 			echo "";
 		fi 
 		boucle=$boucle+1;
+		#NOTE : @WARNING @TEMP @TODO @TEST 
+		#for test:  not allowing loop
+		exit 0 ; 
+		
 	done
 exit 0
 
