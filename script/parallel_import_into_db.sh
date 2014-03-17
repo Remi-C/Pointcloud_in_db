@@ -31,20 +31,20 @@
 #Variables : NEED TO BE TWEAKED
 
 	#point type : default : "Riegl_nouvelle_acquisition_TMobilita_Janvier_2013"
-		declare pointschema="Riegl_nouvelle_acquisition_TMobilita_Janvier_2013";
+		declare pointschema="Riegl_nouvelle_acquisition_TMobilita_Janvier_2013_plus_Classif";
 	#Input data folder : default : "../data/riegl"
-		declare datafolder="/media/sf_E_RemiCura/DATA/Donnees_IGN/Terr_Mob_2/riegl_sphere_ts";	
+		declare datafolder="../../../riegl_CMM";	
 	#name of the table where to write patches, schema qualified. Default : "acquisition_tmob_012013.riegl_pcpatch_space"
 		declare patchtable="acquisition_tmob_012013.riegl_pcpatch_space";
 	#number of parallel import: carefull, we need one cpu for parsing ply file and one cpu for psql instance, so this parameter should be at max : number_of_CPU/2
-		declare -i jobnumber=1;
+		declare -i jobnumber=4;
 	#name of the script to load one file into temporary table : default : "./utils/one_file_import_into_db.sh"
 		declare scriptplytotemporary="./utils/one_file_import_into_db.sh";
 	#name of the programm converting binary ply to ascii csv (separator = whitespace) , default : "./RPly_Ubuntu/bin/RPly_convert"
 		declare programmplytoascii="../RPly_Ubuntu/bin/RPly_convert";	
 	#command to connect to the database: default "psql -d test_pointcloud -p 5432" 
 		#Warning : do not ad -h, or postgres will connect using TCP (thus needing a password)
-		declare psql_commande="psql -d test_pointcloud -p 5433";
+		declare psql_commande="psql -d test_pointcloud -p 5432";
 
 	
 #UI
@@ -79,7 +79,7 @@ fi
 			"$jobnumber"_"$i" \
 			"$scriptplytotemporary" \
 			"$programmplytoascii" \
-			"$psql_commande"
+			"$psql_commande" &
 	done #end of loop on job number
 exit 0;
 

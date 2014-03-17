@@ -85,68 +85,75 @@ declare -i valeurModulo=$(echo "$4" | cut -f2 -d_)
 		#case where we load the file
 		echo "Loading $f in $3"; 
 			
-			if  [ "$1" = "Riegl_nouvelle_acquisition_TMobilita_Janvier_2013" ] 
+			if  [ "$1" = "Riegl_nouvelle_acquisition_TMobilita_Janvier_2013_plus_Classif" ] 
 			then #the point is of type Riegl
 			#echo "riegl type point";
 			
 			
 			##
 			#Sdeleting then creating temporary table
-				commande_sql="DROP TABLE IF EXISTS temp_"$1"_$4_$boucle;
-				CREATE TABLE temp_"$1"_$4_$boucle (
-				GPS_time double precision,
-				x_sensor real,
-				y_sensor real,
-				z_sensor real,
-				x_origin_sensor real,
-				y_origin_sensor real, 
-				z_origin_sensor real,
+				commande_sql="DROP TABLE IF EXISTS temp_riegl_$4_$boucle;
+				CREATE TABLE temp_riegl_$4_$boucle (
 				x double precision,
 				y double precision,
 				z real,
+				x_sensor real,
+				y_sensor real,
+				z_sensor real,
 				x_origin double precision,
 				y_origin double precision,
 				z_origin real,
-				echo_range real,
+				x_origin_sensor real,
+				y_origin_sensor real, 
+				z_origin_sensor real,
+				reflectance real,
+				amplitude real,
+				deviation real,
+				background_radiation float,
+				GPS_time double precision,
+				radius float,
 				theta real,
 				phi real,
+				echo_range real,
 				num_echo bigint,
 				nb_of_echo bigint,
-				amplitude real,
-				reflectance real,
-				deviation real,
-				background_radiation float);";
-				#echo "Deleting/creating temporary point table temp_"$1"_$4_$boucle";
+				label int,
+				class int
+				);";
+				#echo "Deleting/creating temporary point table temp_riegl_$4_$boucle";
 				$7 -c "$commande_sql";
 			##	
 			#importing points into temporary table
 				#Using script to load points into temp table
-				echo "Importing points from $f file into temporary table temp_"$1"_$4_$boucle using script $5";
+				echo "Importing points from $f file into temporary table temp_riegl_$4_$boucle using script $5";
 
-				$5 temp_"$1"_$4_$boucle $f $6 "$7" ;
+				$5 temp_riegl_$4_$boucle $f $6 "$7" ;
 				
 			
 			##
 			#Creating patches
 				##Creating riegl patches
-				echo "filling patch table $3 with spatial patch created from points from temp_"$1"_$4_$boucle";
+				echo "filling patch table $3 with spatial patch created from points from temp_riegl_$4_$boucle";
 				commande_sql="
 				WITH to_insert AS (
 				SELECT PC_patch(point) AS patch
 				FROM (
-					SELECT x,y,z,PC_MakePoint(2, ARRAY[gps_time,x_sensor,y_sensor,z_sensor,x_origin_sensor,y_origin_sensor,z_origin_sensor,x,y,z,x_origin,y_origin,z_origin,echo_range,theta,phi,num_echo,nb_of_echo,amplitude,reflectance,deviation,background_radiation::float] ) AS point
-					FROM  temp_"$1"_$4_$boucle AS pcr
+					SELECT x,y,z,
+						PC_MakePoint(2, 
+							--ARRAY[gps_time,x_sensor,y_sensor,z_sensor,x_origin_sensor,y_origin_sensor,z_origin_sensor,x,y,z,x_origin,y_origin,z_origin,echo_range,theta,phi,num_echo,nb_of_echo,amplitude,reflectance,deviation,background_radiation::float] ) AS point
+							ARRAY[ X,Y,Z,GPS_time,reflectance,  label,class, x_sensor,y_sensor,z_sensor, x_origin_sensor,y_origin_sensor,z_origin_sensor, x_origin,y_origin,z_origin,echo_range,radius,theta,phi, num_echo,nb_of_echo, amplitude,deviation,background_radiation::float]) AS point
+					FROM  temp_riegl_$4_$boucle AS pcr
 					) table_point
 				GROUP BY ROUND(z),ROUND(x),ROUND(y)
 				)
-				INSERT INTO $3 (patch) SELECT to_insert.patch FROM to_insert;";
+				INSERT INTO $3 (file_name,patch) SELECT '"$f"',to_insert.patch FROM to_insert;";
 				$7 -c "$commande_sql";
 				
 				
 			##
 			#delete temporary table
 
-				commande_sql="DROP TABLE IF EXISTS temp_"$1"_$4_$boucle;"
+				commande_sql="DROP TABLE IF EXISTS temp_riegl_$4_$boucle;"
 				echo "the patch table $3 has been filled with patch based on points from $f, deleting the useless temp temp_"$1"_$4_$boucle  table";
 				$7 -c "$commande_sql";
 				
@@ -160,21 +167,21 @@ declare -i valeurModulo=$(echo "$4" | cut -f2 -d_)
 
 				commande_sql="DROP TABLE IF EXISTS temp_"$1"_$4_$boucle;
 				CREATE TABLE temp_"$1"_$4_$boucle (
-				gps_time double precision,
-				 echo_range integer,
-				 intensity smallint,
-				 theta integer,
-				 block_id integer,
-				 fiber smallint,
-				 x_laser double precision,
-				 y_laser double precision,
-				 z_laser double precision,
-				 x double precision,
-				 y double precision,
-				 z double precision,
-				 x_centre_laser double precision,
-				 y_centre_laser double precision,
-				 z_centre_laser double precision);";
+					gps_time double precision,
+					 echo_range integer,
+					 intensity smallint,
+					 theta integer,
+					 block_id integer,
+					 fiber smallint,
+					 x_laser double precision,
+					 y_laser double precision,
+					 z_laser double precision,
+					 x double precision,
+					 y double precision,
+					 z double precision,
+					 x_centre_laser double precision,
+					 y_centre_laser double precision,
+					 z_centre_laser double precision);";
 				echo "Deleting/creating temporary table temp_"$1"_$4_$boucle";
 				$7 -c "$commande_sql";
 			##	

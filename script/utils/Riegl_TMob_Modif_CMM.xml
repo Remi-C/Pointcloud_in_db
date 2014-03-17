@@ -1,0 +1,302 @@
+$$
+			<?xml version="1.0" encoding="UTF-8"?>	<!-- RIEGL Laser schema -->
+			<!-- ply header: (note dimension order is different)
+			ply
+				format binary_big_endian 1.0
+				comment CMM-ARMINES: MorphoViewer3D - PLY File
+				obj_info Points and polygons
+				element vertex 3000000
+				property float32 x
+				property float32 y
+				property float32 z
+				property float32 x_sensor
+				property float32 y_sensor
+				property float32 z_sensor
+				property float32 x_origin
+				property float32 y_origin
+				property float32 z_origin
+				property float32 x_origin_sensor
+				property float32 y_origin_sensor
+				property float32 z_origin_sensor
+				property float32 reflectance
+				property float32 amplitude
+				property float32 deviation
+				property float32 background_radiation
+				property float64 GPS_time
+				property float32 radius
+				property float32 theta
+				property float32 phi
+				property float32 range
+				property uint num_echo
+				property uint nb_of_echo
+				property uint label
+				property uint class
+			end_header
+			-->
+			
+			<pc:PointCloudSchema xmlns:pc="http://pointcloud.org/schemas/PC/1.1" 
+			    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+			  <pc:metadata>
+			    <Metadata name="compression">dimensional</Metadata>
+			  </pc:metadata>
+			  
+			   <!-- point dans repere Lambert 93 en metre (modulo transformation)-->
+			 <pc:dimension>
+			    <pc:position>1</pc:position>
+			    <pc:size>5</pc:size>
+			    <pc:description>Coordonnées X du point dans le repere Lambert 93, en metre, attention a l offset</pc:description>
+			    <pc:name>x</pc:name>
+			    <pc:interpretation>double</pc:interpretation>
+			    <pc:scale>0.001</pc:scale>
+				<pc:offset>649000</pc:offset>
+			  </pc:dimension>
+			   <pc:dimension>
+			    <pc:position>2</pc:position>
+			    <pc:size>5</pc:size>
+			    <pc:description>Coordonnées Y du point dans le repere Lambert 93, en metre, attention a l offset</pc:description>
+			    <pc:name>y</pc:name>
+			    <pc:interpretation>double</pc:interpretation>
+			    <pc:scale>0.001</pc:scale>
+				<pc:offset>6840000</pc:offset>
+			  </pc:dimension>
+				<pc:dimension>
+			    <pc:position>3</pc:position>
+			    <pc:size>5</pc:size>
+			    <pc:description>Coordonnées Z du point dans le repere Lambert 93, en metre, attention a l offset</pc:description>
+			    <pc:name>z</pc:name>
+			    <pc:interpretation>float</pc:interpretation>
+			    <pc:scale>0.001</pc:scale>
+				<pc:offset>0</pc:offset>
+			  </pc:dimension>
+			  
+			    <!-- temps au moment de l'acquisition-->
+			   <pc:dimension>
+			    <pc:position>4</pc:position>
+			    <pc:size>8</pc:size>
+			    <pc:description>le temps GPS du moement de l acquisition du points. Note : il faudrait utiliser l offset et s assurer qu il n y a pas de decallage</pc:description>
+			    <pc:name>GPS_time</pc:name>
+			    <pc:interpretation>double</pc:interpretation>
+			    <pc:scale>0.000001</pc:scale>
+				<pc:offset>0</pc:offset>
+			  </pc:dimension>
+			  
+			   <!-- reflectance ie amplitude de rtrour moduloo distance-->
+			   <pc:dimension>
+			    <pc:position>5</pc:position>
+			    <pc:size>4</pc:size>
+			    <pc:description>l amplitude de l onde de retour corrigee de la distance, attention : peut etre faux lors de retour multiples, attention : impropre pour classification, la corriger par formule trouveepar remi cura</pc:description>
+			    <pc:name>reflectance</pc:name>
+			    <pc:interpretation>float</pc:interpretation>
+			    <pc:scale>0.0001</pc:scale>
+				<pc:offset>0</pc:offset>
+			  </pc:dimension>
+			  
+			  
+			   <!-- classification : 	property uint label property uint class-->
+			 <pc:dimension>
+			    <pc:position>6</pc:position>
+			    <pc:size>4</pc:size>
+			    <pc:description>un etiquette unique par fichier par objet detecté</pc:description>
+			    <pc:name>label</pc:name>
+			    <pc:interpretation>uint32_t</pc:interpretation>
+			    <pc:scale>1</pc:scale>
+				<pc:offset>0</pc:offset>
+			  </pc:dimension>
+			   <pc:dimension>
+			    <pc:position>7</pc:position>
+			    <pc:size>4</pc:size>
+			    <pc:description>le typede l objet detecté</pc:description>
+			    <pc:name>class</pc:name>
+			    <pc:interpretation>uint32_t</pc:interpretation>
+			    <pc:scale>1</pc:scale>
+				<pc:offset>0</pc:offset>
+			  </pc:dimension>
+				 
+			
+			  
+			  
+			  <!-- point dans repere local-->
+			  <pc:dimension>
+			    <pc:position>8</pc:position>
+			    <pc:size>4</pc:size>
+			    <pc:description>x_sensor : coorodnnée du point dans le repere du laser, du genre qq metres</pc:description>
+			    <pc:name>x_sensor</pc:name>
+			    <pc:interpretation>float</pc:interpretation>
+			    <pc:scale>0.001</pc:scale>
+				<pc:offset>0</pc:offset>
+			  </pc:dimension>
+			  <pc:dimension>
+			    <pc:position>9</pc:position>
+			    <pc:size>4</pc:size>
+			    <pc:description>y_sensor : coorodnnée du point dans le repere du laser, du genre qq metres</pc:description>
+			    <pc:name>y_sensor</pc:name>
+			    <pc:interpretation>float</pc:interpretation>
+			    <pc:scale>0.001</pc:scale>
+				<pc:offset>0</pc:offset>
+			  </pc:dimension>
+			    <pc:dimension>
+			    <pc:position>10</pc:position>
+			    <pc:size>4</pc:size>
+			    <pc:description>z_sensor : coorodnnée du point dans le repere du laser, du genre qq metres</pc:description>
+			    <pc:name>z_sensor</pc:name>
+			    <pc:interpretation>float</pc:interpretation>
+			    <pc:scale>0.001</pc:scale>
+				<pc:offset>0</pc:offset>
+			  </pc:dimension>
+
+			  
+			  <!-- origine du senseur dans repere local-->
+			  <pc:dimension>
+			    <pc:position>11</pc:position>
+			    <pc:size>4</pc:size>
+			    <pc:description>x_origin_sensor : coorodnnée de la position du laser au moment de l acquisition dans le  point dans le repere du laser, du genre qq centimetre : decrit une hellicoide</pc:description>
+			    <pc:name>x_origin_sensor</pc:name>
+			    <pc:interpretation>float</pc:interpretation>
+			    <pc:scale>0.00001</pc:scale>
+				<pc:offset>0</pc:offset>
+			  </pc:dimension>
+			    <pc:dimension>
+			    <pc:position>12</pc:position>
+			    <pc:size>4</pc:size>
+			    <pc:description>y_origin_sensor : coorodnnée de la position du laser au moment de l acquisition dans le  point dans le repere du laser, du genre qq centimetre : decrit une hellicoide</pc:description>
+			    <pc:name>y_origin_sensor</pc:name>
+			    <pc:interpretation>float</pc:interpretation>
+			    <pc:scale>0.00001</pc:scale>
+				<pc:offset>0</pc:offset>
+			  </pc:dimension>
+			    <pc:dimension>
+			    <pc:position>13</pc:position>
+			    <pc:size>4</pc:size>
+			    <pc:description>z_origin_sensor : coorodnnée de la position du laser au moment de l acquisition dans le  point dans le repere du laser, du genre qq centimetre : decrit une hellicoide</pc:description>
+			    <pc:name>z_origin_sensor</pc:name>
+			    <pc:interpretation>float</pc:interpretation>
+			    <pc:scale>0.00001</pc:scale>
+				<pc:offset>0</pc:offset>
+			  </pc:dimension>
+			 
+			
+			 
+			 
+			 <!-- origine du senseur dans repere Lambert93 (modulo translation)-->
+			 <pc:dimension>
+			    <pc:position>14</pc:position>
+			    <pc:size>5</pc:size>
+			    <pc:description>Coordonnées X du senseur dans le repere Lambert 93, en metre, attention a l offset</pc:description>
+			    <pc:name>x_origin</pc:name>
+			    <pc:interpretation>float</pc:interpretation>
+			    <pc:scale>0.0001</pc:scale>
+				<pc:offset>649000</pc:offset>
+			  </pc:dimension>
+			<pc:dimension>
+			    <pc:position>15</pc:position>
+			    <pc:size>5</pc:size>
+			    <pc:description>Coordonnées Y du senseur dans le repere Lambert 93, en metre, attention a l offset</pc:description>
+			    <pc:name>y_origin</pc:name>
+			    <pc:interpretation>float</pc:interpretation>
+			    <pc:scale>0.0001</pc:scale>
+				<pc:offset>6840000</pc:offset>
+			  </pc:dimension>
+			<pc:dimension>
+			    <pc:position>16</pc:position>
+			    <pc:size>5</pc:size>
+			    <pc:description>Coordonnées Z du senseur dans le repere Lambert 93, en metre,</pc:description>
+			    <pc:name>z_origin</pc:name>
+			    <pc:interpretation>float</pc:interpretation>
+			    <pc:scale>0.0001</pc:scale>
+				<pc:offset>0</pc:offset>
+			  </pc:dimension>
+			 
+			 
+			 <!-- mesure geom-->
+			   <pc:dimension>
+			    <pc:position>17</pc:position>
+			    <pc:size>4</pc:size>
+			    <pc:description>Valeur du temps de vol lors de lacquisition. de env 2.25 a + de 400, probablement en milli. Il faudrait determiner le scale proprement</pc:description>
+			    <pc:name>echo_range</pc:name>
+			    <pc:interpretation>float</pc:interpretation>
+			    <pc:scale>0.001</pc:scale>
+				<pc:offset>0</pc:offset>
+			  </pc:dimension>
+			  <pc:dimension>
+			    <pc:position>18</pc:position>
+			    <pc:size>4</pc:size>
+			    <pc:description> distance 3D entre laser et point acquis, ajoute par CMM </pc:description>
+			    <pc:name>radius</pc:name>
+			    <pc:interpretation>float</pc:interpretation>
+			    <pc:scale>1</pc:scale>
+				<pc:offset>0</pc:offset>
+			  </pc:dimension>
+			  <pc:dimension>
+			    <pc:position>19</pc:position>
+			    <pc:size>4</pc:size>
+			    <pc:description>angle entre la direction d acquision et le plan horizontal, codeé entre -3 et +3 env. Il faudrait voir loffset</pc:description>
+			    <pc:name>theta</pc:name>
+			    <pc:interpretation>float</pc:interpretation>
+			    <pc:scale>0.0001</pc:scale>
+				<pc:offset>0</pc:offset>
+			  </pc:dimension>
+			    <pc:dimension>
+			    <pc:position>20</pc:position>
+			    <pc:size>4</pc:size>
+			    <pc:description>un autre angle entre la direction d acquision et ???, codé enrte -0.005 et -0.004. Il faudrait regler loffset</pc:description>
+			    <pc:name>phi</pc:name>
+			    <pc:interpretation>float</pc:interpretation>
+			    <pc:scale>0.000001</pc:scale>
+				<pc:offset>0</pc:offset>
+			  </pc:dimension>
+			  
+			 
+			  <!-- echo multiple-->
+
+			    <pc:dimension>
+			    <pc:position>21</pc:position>
+			    <pc:size>1</pc:size>
+			    <pc:description>le numero du retour dont ona tiré le point (entre 1 et 4)</pc:description>
+			    <pc:name>num_echo</pc:name>
+			    <pc:interpretation>uint8_t</pc:interpretation>
+			    <pc:scale>1</pc:scale>
+				<pc:offset>0</pc:offset>
+			  </pc:dimension>
+			    <pc:dimension>
+			    <pc:position>22</pc:position>
+			    <pc:size>1</pc:size>
+			    <pc:description>le nombre d echos obtenu par le rayon quia  donné ce point </pc:description>
+			    <pc:name>nb_of_echo</pc:name>
+			    <pc:interpretation>uint8_t</pc:interpretation>
+			    <pc:scale>1</pc:scale>
+				<pc:offset>0</pc:offset>
+			  </pc:dimension>
+			  
+			    <!-- donnees avancee-->
+			  <pc:dimension>
+			    <pc:position>23</pc:position>
+			    <pc:size>4</pc:size>
+			    <pc:description>l amplitude de l onde de retour, attention : peut etre faux lors de retour multiples</pc:description>
+			    <pc:name>amplitude</pc:name>
+			    <pc:interpretation>float</pc:interpretation>
+			    <pc:scale>0.0001</pc:scale>
+				<pc:offset>0</pc:offset>
+			  </pc:dimension>
+			 
+			    <pc:dimension>
+			    <pc:position>24</pc:position>
+			    <pc:size>2</pc:size>
+			    <pc:description>Une grandeur que je ne connais pas, entre -1 et plusieurs dizaine de milliers , par pas de 1</pc:description>
+			    <pc:name>deviation</pc:name>
+			    <pc:interpretation>uint32_t</pc:interpretation>
+			    <pc:scale>1</pc:scale>
+				<pc:offset>0</pc:offset>
+			  </pc:dimension>
+			    <pc:dimension>
+			    <pc:position>25</pc:position>
+			    <pc:size>1</pc:size>
+			    <pc:description>Une grandeur que je ne connais pas, vaut toujours nan, on la stocke comme un entier</pc:description>
+			    <pc:name>background_radiation</pc:name>
+			    <pc:interpretation>uint8_t</pc:interpretation>
+			    <pc:scale>1</pc:scale>
+				<pc:offset>0</pc:offset>
+			  </pc:dimension>
+				
+				
+			</pc:PointCloudSchema>
+			$$
