@@ -138,13 +138,14 @@ declare -i valeurModulo=$(echo "$4" | cut -f2 -d_)
 				WITH to_insert AS (
 				SELECT PC_patch(point) AS patch
 				FROM (
-					SELECT x,y,z,
+					SELECT x,y,z,gps_time,
 						PC_MakePoint(2, 
 							--ARRAY[gps_time,x_sensor,y_sensor,z_sensor,x_origin_sensor,y_origin_sensor,z_origin_sensor,x,y,z,x_origin,y_origin,z_origin,echo_range,theta,phi,num_echo,nb_of_echo,amplitude,reflectance,deviation,background_radiation::float] ) AS point
 							ARRAY[ X,Y,Z,GPS_time,reflectance,  label,class, x_sensor,y_sensor,z_sensor, x_origin_sensor,y_origin_sensor,z_origin_sensor, x_origin,y_origin,z_origin,echo_range,radius,theta,phi, num_echo,nb_of_echo, amplitude,deviation,background_radiation::float]) AS point
 					FROM  temp_riegl_$4_$boucle AS pcr
 					) table_point
 				GROUP BY ROUND(z),ROUND(x),ROUND(y)
+				ORDER BY gps_time ASC
 				)
 				INSERT INTO $3 (file_name,patch) SELECT '"$f"',to_insert.patch FROM to_insert;";
 				$7 -c "$commande_sql";
