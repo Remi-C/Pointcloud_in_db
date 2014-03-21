@@ -25,7 +25,7 @@ usage="
 #INPUTS
 ############################
 #1st : name of the postgres (schema_qualified) temporary table which will receive the points: Carefull : table columns must match point attributes
-#2nd : Name of the ply binary file containing points
+#2nd : Name of the las binary file containing points
 #3dd : Programm to convert from binary ply to ascii ply (wihtout header)
 #4th : psql command to connect to the database
 ############################"
@@ -63,15 +63,15 @@ echo "loading data from "$2" into temp table "$1" ";
 #Data Processing
 
 #Deleting/Creating fifo
-rm -f /tmp/pipe_ply_binaire_vers_ply_ascii_"$1";
-mkfifo --mode=0666 /tmp/pipe_ply_binaire_vers_ply_ascii_"$1";
+rm -f /tmp/pipe_las_binaire_vers_las_ascii_"$1";
+mkfifo --mode=0666 /tmp/pipe_las_binaire_vers_las_ascii_"$1";
 
 #attempting to copy from file into table : careful , file column must match table column
-$3 -a_nh $2 /tmp/pipe_ply_binaire_vers_ply_ascii_"$1" & 
-$4 -c "COPY $1 FROM '/tmp/pipe_ply_binaire_vers_ply_ascii_"$1"' WITH CSV DELIMITER AS ' ';";
+$3 -parse xyzticrnp -sep space -i $2 -o /tmp/pipe_las_binaire_vers_las_ascii_"$1" & 
+$4 -c "COPY $1 FROM '/tmp/pipe_las_binaire_vers_las_ascii_"$1"' WITH CSV DELIMITER AS ' ';";
 
 #deleting fifo 
-rm /tmp/pipe_ply_binaire_vers_ply_ascii_"$1";
+rm /tmp/pipe_las_binaire_vers_las_ascii_"$1";
 exit 0;
 
 
