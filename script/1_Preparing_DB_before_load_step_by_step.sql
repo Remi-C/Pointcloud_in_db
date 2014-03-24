@@ -94,6 +94,7 @@
 	----
 	--Adding a text descriptor to the pointcloud_formats table to ease human interpretation
 	ALTER TABLE pointcloud_formats ADD COLUMN nom_schema text;
+	--truncate pointcloud_formats
 	
 	----
 	--Creating a XML schema for the Velodyn Laser 

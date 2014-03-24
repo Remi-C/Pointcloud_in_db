@@ -10,8 +10,8 @@
 #WARNING : will close all open PSQL process
 
 killall parallel_import_into_db.sh;
-killall sequential_import_into_db.sh;
 killall one_file_import_into_db.sh;
+killall sequential_import_into_db.sh;
 killall RPly_convert ;
 killall psql ;
 exit 0;
