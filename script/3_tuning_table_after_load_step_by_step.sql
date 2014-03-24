@@ -23,11 +23,11 @@ _...
 
 		----
 		--deelte function if it exists
-		DROP FUNCTION IF EXISTS acquisition_tmob_012013.rc_compute_range_for_a_patch(PCPATCH,text);
+		DROP FUNCTION IF EXISTS vosges_2011.rc_compute_range_for_a_patch(PCPATCH,text);
 
 		----
 		--creating function
-		CREATE OR REPLACE FUNCTION acquisition_tmob_012013.rc_compute_range_for_a_patch(patch PCPATCH, nom_grandeur_pour_interval text)
+		CREATE OR REPLACE FUNCTION vosges_2011.rc_compute_range_for_a_patch(patch PCPATCH, nom_grandeur_pour_interval text)
 		RETURNS NUMRANGE AS $$ 
 		BEGIN
 		/*
@@ -47,36 +47,23 @@ _...
 --▓▒░creating spatial index▓▒░--
 	----
 	--On riegl
-		CREATE INDEX acquisition_tmob_012013_riegl_pcpatch_space_patch_gist_2D ON acquisition_tmob_012013.riegl_pcpatch_space USING GIST (CAST(patch AS geometry));
-	----
-	--on velodyn
-		CREATE INDEX acquisition_tmob_012013_velo_pcpatch_space_patch_gist_2D ON acquisition_tmob_012013.velo_pcpatch_space USING GIST (CAST(patch AS geometry));
-
+		CREATE INDEX vosges_2011_las_vosges_gist_2D ON vosges_2011.las_vosges USING GIST (CAST(patch AS geometry));
 
 	
 --▓▒░creating time index▓▒░--
 
 	----
 	--time index on riegl
-		CREATE INDEX acquisition_tmob_012013_riegl_pcpatch_space_patch_gist_range_gps_time
-			ON acquisition_tmob_012013.riegl_pcpatch_space
-			USING GIST ( acquisition_tmob_012013.rc_compute_range_for_a_patch(patch,'gps_time'));
-	--time index on velo
-		CREATE INDEX acquisition_tmob_012013_velo_pcpatch_space_patch_gist_range_gps_time 
-			ON acquisition_tmob_012013.velo_pcpatch_space
-			USING GIST ( acquisition_tmob_012013.rc_compute_range_for_a_patch(patch,'gps_time'));
-
+		CREATE INDEX vosges_2011_las_vosges_gist_range_gps_time
+			ON vosges_2011.las_vosges
+			USING GIST ( vosges_2011.rc_compute_range_for_a_patch(patch,'gps_time'));
+	
 
 --▓▒░creating index on num points in patch▓▒░--
 
 	--num points per patch on riegl
-		CREATE INDEX acquisition_tmob_012013_riegl_pcpatch_num_points_perpatch
-			ON acquisition_tmob_012013.riegl_pcpatch_space
-			(PC_NumPoints(patch));
-	--num points per patch on velodyn
-		CREATE INDEX acquisition_tmob_012013_velo_pcpatch_num_points_perpatch
-			ON acquisition_tmob_012013.velo_pcpatch_space
-			(PC_NumPoints(patch));
-
+		CREATE INDEXvosges_2011_las_vosges_num_points_perpatch
+			ON vosges_2011.las_vosges (PC_NumPoints(patch));
+	
 
 			
