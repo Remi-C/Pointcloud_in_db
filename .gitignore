@@ -1,1 +1,5 @@
 /.project
+*.qgs
+*.QGS
+*.csv
+*.CSV
