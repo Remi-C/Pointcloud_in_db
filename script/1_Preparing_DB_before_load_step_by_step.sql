@@ -251,7 +251,7 @@
 			    <!-- echo multiple-->
 
 			    <pc:dimension>
-			    <pc:position>17</pc:position>
+			    <pc:position>13</pc:position>
 			    <pc:size>1</pc:size>
 			    <pc:description>le numero du retour dont ona tiré le point (entre 1 et 4)</pc:description>
 			    <pc:name>num_echo</pc:name>
@@ -260,7 +260,7 @@
 				<pc:offset>0</pc:offset>
 			  </pc:dimension>
 			    <pc:dimension>
-			    <pc:position>18</pc:position>
+			    <pc:position>14</pc:position>
 			    <pc:size>1</pc:size>
 			    <pc:description>le nombre d echos obtenu par le rayon quia  donné ce point </pc:description>
 			    <pc:name>nb_of_echo</pc:name>
