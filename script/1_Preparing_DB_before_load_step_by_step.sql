@@ -83,9 +83,9 @@
 	
 --▓▒░Creating a dedicated postgres schema▓▒░--
 	--Deleting the schema if it already exists
-	DROP SCHEMA IF EXISTS acquisition_tmob_012013;
+	DROP SCHEMA IF EXISTS benchmark;
 	--creating the schema
-	CREATE SCHEMA acquisition_tmob_012013;
+	CREATE SCHEMA benchmark;
 
 	
 --▓▒░Creating the XML schema corresponding to points acquired by a Riegl Laser and a Velodyn Laser▓▒░--
@@ -557,8 +557,8 @@
 
 	----
 	--Creating table for riegl laser, for space partitionning
-		DROP TABLE IF EXISTS acquisition_tmob_012013.riegl_pcpatch_space;
-		CREATE TABLE acquisition_tmob_012013.riegl_pcpatch_space(
+		DROP TABLE IF EXISTS benchmark.riegl_pcpatch_space;
+		CREATE TABLE benchmark.riegl_pcpatch_space(
 			gid SERIAL PRIMARY KEY,
 			patch PCPATCH(2)
 		);
