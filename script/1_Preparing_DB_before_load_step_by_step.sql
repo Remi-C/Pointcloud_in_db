@@ -93,7 +93,7 @@
 
 	----
 	--Adding a text descriptor to the pointcloud_formats table to ease human interpretation
-	ALTER TABLE pointcloud_formats ADD COLUMN nom_schema text;
+	ALTER TABLE pointcloud_formats ADD COLUMN schema_name text;
 	
 	----
 	--Creating a XML schema for the Velodyn Laser :
@@ -290,7 +290,7 @@
 	--Creating the XML  schema for points acquired by a riegl laser:
 			--creating an entry for this schema
 			
-			INSERT INTO pointcloud_formats (pcid, srid, nom_schema) VALUES (2, 0,'Riegl_nouvelle_acquisition_TMobilita_Janvier_2013');--On crée un nouveau schema
+			INSERT INTO pointcloud_formats (pcid, srid, schema_name) VALUES (2, 0,'Riegl_Benchmark_IGN');--On crée un nouveau schema
 			--Filling the entry
 			UPDATE public.pointcloud_formats SET schema = 
 			$$
@@ -549,7 +549,7 @@
 			  </pc:metadata>
 			</pc:PointCloudSchema>
 			$$ 
-			WHERE nom_schema = 'Riegl_nouvelle_acquisition_TMobilita_Janvier_2013';
+			WHERE schema_name = 'Riegl_Benchmark_IGN';
 
 
 
