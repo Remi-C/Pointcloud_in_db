@@ -4,3 +4,4 @@
 *.csv
 *.CSV
 *geany_run_script.sh
+*.ply
