@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<LidarData xmlns="cs">
+  <Attributes DataFormat="plyarchi" DataSize="12000000" DataFileName="Cassette_GT.ply">
+    <Attribute DataType="float64" Name="GPS_time"/>
+    <Attribute DataType="float32" Name="x"/>
+    <Attribute DataType="float32" Name="y"/>
+    <Attribute DataType="float32" Name="z"/>
+    <Attribute DataType="float32" Name="x_origin"/>
+    <Attribute DataType="float32" Name="y_origin"/>
+    <Attribute DataType="float32" Name="z_origin"/>
+    <Attribute DataType="float32" Name="reflectance"/>
+    <Attribute DataType="float32" Name="range"/>
+    <Attribute DataType="float32" Name="theta"/>
+    <Attribute DataType="uint32" Name="id"/>
+    <Attribute DataType="uint32" Name="class"/>
+    <Attribute DataType="uint8" Name="num_echo"/>
+    <Attribute DataType="uint8" Name="nb_of_echo"/>
+    <CenteringTransfo tx="649000" ty="6.84e+06"/>
+  </Attributes>
+</LidarData>
