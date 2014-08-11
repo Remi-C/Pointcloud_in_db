@@ -48,6 +48,7 @@ _...
 	----
 	--On riegl
 		CREATE INDEX ON riegl_pcpatch_space USING GIST (CAST(patch AS geometry));
+		CREATE INDEX ON riegl_pcpatch_space USING GIST (ST_SetSRID(CAST(patch AS geometry ),932011));
 	----
 	
 --▓▒░creating time index▓▒░--
