@@ -65,13 +65,11 @@ if [ $ans = n -o $ans = N -o $ans = no -o $ans = No -o $ans = NO ]
 then
 echo "Exiting"
 exit 0;
-fi
-	echo "toto"
+fi 
 
 #loop to launch as many process as indicated by jobnumber
 	for ((i = 0 ; i < $jobnumber ; i++ )); 
-	do #loop on jobnumber
-		echo "loop"
+	do #loop on jobnumber 
 		#launching import for every ply file in datafolder where file_number modulo jobnumber = i
 		./utils/sequential_import_into_db.sh \
 			"$pointschema" \

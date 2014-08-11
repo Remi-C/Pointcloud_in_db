@@ -64,14 +64,11 @@ then
 	exit 0;
 fi
 
- echo "titi"
 ##
 #Splitting the 4th arguments to 2 usable integers
 declare -i unsurN=$(echo "$4" | cut -f1 -d_)
 declare -i valeurModulo=$(echo "$4" | cut -f2 -d_)
 
-	echo pwd; 
-	echo $2/*.ply;
 ##
 #loop on every file in folder
 ##
