@@ -138,7 +138,7 @@
 			 <!-- origine du senseur dans repere Lambert93 (modulo translation)-->
 			 <pc:dimension>
 			    <pc:position>2</pc:position>
-			    <pc:size>4</pc:size>
+			    <pc:size>5</pc:size>
 			    <pc:description>Coordonnées X du senseur dans le repere Lambert 93, en metre, attention a l offset</pc:description>
 			    <pc:name>x</pc:name>
 			    <pc:interpretation>float</pc:interpretation>
@@ -147,7 +147,7 @@
 			  </pc:dimension>
 			<pc:dimension>
 			    <pc:position>3</pc:position>
-			    <pc:size>4</pc:size>
+			    <pc:size>5</pc:size>
 			    <pc:description>Coordonnées Y du senseur dans le repere Lambert 93, en metre, attention a l offset</pc:description>
 			    <pc:name>y</pc:name>
 			    <pc:interpretation>float</pc:interpretation>
@@ -156,7 +156,7 @@
 			  </pc:dimension>
 			<pc:dimension>
 			    <pc:position>4</pc:position>
-			    <pc:size>4</pc:size>
+			    <pc:size>5</pc:size>
 			    <pc:description>Coordonnées Z du senseur dans le repere Lambert 93, en metre,</pc:description>
 			    <pc:name>z</pc:name>
 			    <pc:interpretation>float</pc:interpretation>
