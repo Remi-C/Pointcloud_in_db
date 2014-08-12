@@ -99,6 +99,7 @@
 	--Creating the XML  schema for points acquired by a riegl laser:
 			--creating an entry for this schema
 			
+			DELETE FROM pointcloud_formats WHERE schema_name = 'Riegl_Benchmark_IGN'
 			INSERT INTO pointcloud_formats (pcid, srid, schema_name) VALUES (2, 0,'Riegl_Benchmark_IGN');--On crée un nouveau schema
 			--Filling the entry
 			UPDATE public.pointcloud_formats SET schema = 
@@ -138,28 +139,28 @@
 			 <!-- origine du senseur dans repere Lambert93 (modulo translation)-->
 			 <pc:dimension>
 			    <pc:position>2</pc:position>
-			    <pc:size>5</pc:size>
+			    <pc:size>8</pc:size>
 			    <pc:description>Coordonnées X du senseur dans le repere Lambert 93, en metre, attention a l offset</pc:description>
 			    <pc:name>x</pc:name>
-			    <pc:interpretation>float</pc:interpretation>
+			    <pc:interpretation>double</pc:interpretation>
 			    <pc:scale>0.0001</pc:scale>
 				<pc:offset>649000</pc:offset>
 			  </pc:dimension>
 			<pc:dimension>
 			    <pc:position>3</pc:position>
-			    <pc:size>5</pc:size>
+			    <pc:size>8</pc:size>
 			    <pc:description>Coordonnées Y du senseur dans le repere Lambert 93, en metre, attention a l offset</pc:description>
 			    <pc:name>y</pc:name>
-			    <pc:interpretation>float</pc:interpretation>
+			    <pc:interpretation>double</pc:interpretation>
 			    <pc:scale>0.0001</pc:scale>
 				<pc:offset>6840000</pc:offset>
 			  </pc:dimension>
 			<pc:dimension>
 			    <pc:position>4</pc:position>
-			    <pc:size>5</pc:size>
+			    <pc:size>8</pc:size>
 			    <pc:description>Coordonnées Z du senseur dans le repere Lambert 93, en metre,</pc:description>
 			    <pc:name>z</pc:name>
-			    <pc:interpretation>float</pc:interpretation>
+			    <pc:interpretation>double</pc:interpretation>
 			    <pc:scale>0.0001</pc:scale>
 				<pc:offset>0</pc:offset>
 			  </pc:dimension>
@@ -283,7 +284,7 @@
 
 	----
 	--Creating table for riegl laser, for space partitionning
-		DROP TABLE IF EXISTS benchmark.riegl_pcpatch_space;
+		DROP TABLE IF EXISTS benchmark.riegl_pcpatch_space CASCADE;
 		CREATE TABLE benchmark.riegl_pcpatch_space(
 			gid SERIAL PRIMARY KEY,
 			patch PCPATCH(2)
