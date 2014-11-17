@@ -222,8 +222,8 @@ SELECT rc_exportPlyFile_filename(
 
  
 
-DROP FUNCTION IF EXISTS   rc_exportPlyFile_area( patch_table_name regclass ,  attributes_types_and_name TEXT,area_geom_l93_wkt TEXT, u_range_chosen int, where_point_text text , output_file_path TEXT, export_precision_digits  INT , max_points_per_patch integer , voxel_grid_size FLOAT); 
-CREATE OR REPLACE FUNCTION  rc_exportPlyFile_area(patch_table_name regclass,  attributes_types_and_name TEXT,area_geom_l93_wkt TEXT, u_range_chosen int DEFAULT -1, where_point_text text DEFAULT NULL, output_file_path TEXT DEFAULT '/tmp/rc_exportPlyFile_with_where.ply', export_precision_digits INT DEFAULT 4, max_points_per_patch integer DEFAULT 30000, voxel_grid_size FLOAT DEFAULT 0.01)
+DROP FUNCTION IF EXISTS   rc_exportPlyFile_area( patch_table_name regclass ,  attributes_types_and_name TEXT,area_geom_l93_wkt TEXT, where_patch_text TEXT, u_range_chosen int, where_point_text text , output_file_path TEXT, export_precision_digits  INT , max_points_per_patch integer , voxel_grid_size FLOAT); 
+CREATE OR REPLACE FUNCTION  rc_exportPlyFile_area(patch_table_name regclass,  attributes_types_and_name TEXT,area_geom_l93_wkt TEXT, where_patch_text TEXT , u_range_chosen int DEFAULT -1, where_point_text text DEFAULT NULL, output_file_path TEXT DEFAULT '/tmp/rc_exportPlyFile_with_where.ply', export_precision_digits INT DEFAULT 4, max_points_per_patch integer DEFAULT 30000, voxel_grid_size FLOAT DEFAULT 0.01)
   RETURNS bigint AS
 $BODY$
 		--@brief : this function writes to disk the original ply file with asked attributes asked WARNING : not safe against SQL injection
@@ -253,13 +253,16 @@ $BODY$
 			FROM target_pcid NATURAL JOIN pointcloud_formats ;', patch_table_name) ;
 			EXECUTE query INTO patch_srid ; 
 
-
+		query := format('ST_Intersects(patchs.patch::geometry, ST_Transform(ST_GeomFromText(%L,931008),%s  ))=TRUE   ', area_geom_l93_wkt ,patch_srid);
+		IF where_patch_text IS NOT NULL THEN
+		query := query || ' AND '  || where_patch_text ||' ';
+		END IF ;  
 		--RAISE NOTICE '%',patch_srid ; 
 		 SELECT  rc_exportPlyFile_with_where(
 			patch_table_name 
 			,attributes_types_and_name  
-			, format('ST_Intersects(patchs.patch::geometry, ST_Transform(ST_GeomFromText(%L,931008),%s  ))=TRUE   ', area_geom_l93_wkt ,patch_srid)
-			,u_range_chosen  
+			, query 
+			, u_range_chosen  
 			, where_point_text 
 			, output_file_path  
 			, export_precision_digits 
@@ -276,9 +279,10 @@ SELECT rc_exportPlyFile_area(
 		patch_table_name:='acquisition_tmob_012013.riegl_pcpatch_space'  -- 'tmob_20140616.riegl_pcpatch_space' --'acquisition_tmob_012013.riegl_pcpatch_space'
 		,attributes_types_and_name  := 'float32 x,float32 y,float32 z,float32 reflectance'
 		,area_geom_l93_wkt:='POLYGON((651473 6861179,651465 6861181,651463 6861189,651465 6861197,651473 6861199,651480 6861197,651483 6861189,651480 6861181,651473 6861179))'
+		,where_patch_text := NULL
 		,u_range_chosen:=2
 		,where_point_text:= NULL
-		, output_file_path :=  '/tmp/ExportPointCloud/tata.ply' 
+		, output_file_path :=  '/ExportPointCloud/tata.ply' 
 		, export_precision_digits:= 4
 		, max_points_per_patch :=800
 		, voxel_grid_size:=0.05);
