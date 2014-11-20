@@ -11,8 +11,8 @@
 
 
 
-DROP FUNCTION IF EXISTS   rc_exportPlyFile_with_where( patch_table_name regclass ,  attributes_types_and_name TEXT,where_patch_text text,u_range_chosen int, where_point_text text ,output_file_path TEXT, export_precision_digits  INT , max_points_per_patch integer , voxel_grid_size FLOAT); 
-CREATE OR REPLACE FUNCTION  rc_exportPlyFile_with_where(patch_table_name regclass,  attributes_types_and_name TEXT,where_patch_text text DEFAULT 'gid=1', u_range_chosen int DEFAULT -1,where_point_text text DEFAULT NULL, output_file_path TEXT DEFAULT '/tmp/rc_exportPlyFile_with_where.ply', export_precision_digits INT DEFAULT 4, max_points_per_patch integer DEFAULT 30000, voxel_grid_size FLOAT DEFAULT 0.01)
+DROP FUNCTION IF EXISTS   rc_exportPlyFile_with_where( patch_table_name regclass ,  attributes_types_and_name TEXT,where_patch_text text,u_range_chosen int, where_point_text text ,output_file_path TEXT, output_as_binary BOOLEAN, export_precision_digits  INT , max_points_per_patch integer , voxel_grid_size FLOAT); 
+CREATE OR REPLACE FUNCTION  rc_exportPlyFile_with_where(patch_table_name regclass,  attributes_types_and_name TEXT,where_patch_text text DEFAULT 'gid=1', u_range_chosen int DEFAULT -1,where_point_text text DEFAULT NULL, output_file_path TEXT DEFAULT '/tmp/rc_exportPlyFile_with_where.ply', output_as_binary BOOLEAN DEFAULT TRUE, export_precision_digits INT DEFAULT 4, max_points_per_patch integer DEFAULT 30000, voxel_grid_size FLOAT DEFAULT 0.01)
   RETURNS bigint AS
 $BODY$
 		--@brief : this function writes to disk the original ply file with asked attributes asked WARNING : not safe against SQL injection
@@ -30,8 +30,12 @@ $BODY$
 			header_fixed_line_number INT := 9 ; 
 			tolerancy_on_range float := 1 ;
 			--u_range_chosen int :=1; 
+			initial_output_file_path TEXT = output_file_path ; 
 		BEGIN 	 
-
+		
+		IF output_as_binary = TRUE THEN --saving the original output file path, will be used for the binary
+			output_file_path = output_file_path || 'temp_ascii' ; 
+		END IF ; 
 
 		IF where_patch_text IS NOT NULL THEN
 			where_patch_text := replace(where_patch_text ,  'range','echo_range');
@@ -106,7 +110,14 @@ SELECT regexp_split_to_table(
 format ascii 1.0
 comment IGN time vertex porperty gives seconds within the day in UTC time system
 comment IGN offset Time 0.000000
-comment IGN offset Pos 650000.00000 6860000.000000 0.000000
+' ;
+IF patch_table_name::text ILIKE '%acquisition_tmob_012013%' THEN 
+query := query || 	'comment IGN offset Pos 649000.000000 6840000.000000 0.000000';
+ELSE 
+query := query || 	'comment IGN offset Pos 650000.00000 6860000.000000 0.000000';
+END IF ; 
+query := query || 	
+'
 comment IGN BBox X=0  Y=0  Z=0
 element vertex '' ||COALESCE(  (SELECT count(*) FROM points  ) ,0)|| ''
 comment property are generated on the fly
@@ -157,12 +168,22 @@ comment property are generated on the fly
 	--raise notice '%',query;  
 	EXECUTE query ;
 	GET DIAGNOSTICS num_points = ROW_COUNT ;	 
+
+	IF output_as_binary = TRUE THEN 
+	--converting ascii ply to binary if necessary
+		query :=   format('SELECT rc_AsciiPlyToBinaryPly(
+				ascii_file :=''%s''
+				, binary_file := ''%s'') ;',output_file_path,initial_output_file_path);  
+		EXECUTE query ; 
+	END IF ; 
+	
 	--returnging the num of points, we have to remove from the count the number of line of headers.
-return num_points -header_fixed_line_number -(SELECT array_length(regexp_split_to_array(attributes_types_and_name , ','),1 ) ); 
-		END ; 
+	return num_points -header_fixed_line_number -(SELECT array_length(regexp_split_to_array(attributes_types_and_name , ','),1 ) ); 
+	 END ; 
 	$BODY$
   LANGUAGE plpgsql VOLATILE CALLED ON NULL INPUT  ;
 
+ 
  
 SELECT   rc_exportPlyFile_with_where(
 		patch_table_name:='acquisition_tmob_012013.riegl_pcpatch_space'  -- 'tmob_20140616.riegl_pcpatch_space'
@@ -171,14 +192,15 @@ SELECT   rc_exportPlyFile_with_where(
 		,u_range_chosen:=-1
 		,where_point_text:= 'pc_get(pt,''range'')< 50 AND (abs(pc_get(pt,''z_origin'') - pc_get(pt,''z''))<10 ) AND pc_get(pt,''num_echo'')=1 '  
 		, output_file_path :=  '/tmp/test_with_where.ply' 
+		,output_as_binary := TRUE ; 
 		, export_precision_digits:= 3
 		, max_points_per_patch :=800
 		, voxel_grid_size:=0.05);
  
 
 		
-DROP FUNCTION IF EXISTS   rc_exportPlyFile_filename( patch_table_name regclass ,  attributes_types_and_name TEXT,file_name text, where_point_text text , output_file_path TEXT, export_precision_digits  INT , max_points_per_patch integer , voxel_grid_size FLOAT); 
-CREATE OR REPLACE FUNCTION  rc_exportPlyFile_filename(patch_table_name regclass,  attributes_types_and_name TEXT,file_name text, where_point_text text DEFAULT NULL, output_file_path TEXT DEFAULT '/tmp/rc_exportPlyFile_with_where.ply' , export_precision_digits INT DEFAULT 4, max_points_per_patch integer DEFAULT 30000, voxel_grid_size FLOAT DEFAULT 0.01)
+DROP FUNCTION IF EXISTS   rc_exportPlyFile_filename( patch_table_name regclass ,  attributes_types_and_name TEXT,file_name text, where_point_text text , output_file_path TEXT,output_as_binary BOOLEAN , export_precision_digits  INT , max_points_per_patch integer , voxel_grid_size FLOAT); 
+CREATE OR REPLACE FUNCTION  rc_exportPlyFile_filename(patch_table_name regclass,  attributes_types_and_name TEXT,file_name text, where_point_text text DEFAULT NULL, output_file_path TEXT DEFAULT '/tmp/rc_exportPlyFile_with_where.ply' ,output_as_binary BOOLEAN DEFAULT TRUE, export_precision_digits INT DEFAULT 4, max_points_per_patch integer DEFAULT 30000, voxel_grid_size FLOAT DEFAULT 0.01)
   RETURNS bigint AS
 $BODY$
 		--@brief : this function writes to disk the original ply file with asked attributes asked WARNING : not safe against SQL injection
@@ -199,6 +221,7 @@ $BODY$
 			,-1 --u_range_chosen int : we don't want to filter on number of passages 
 			, where_point_text 
 			, output_file_path  
+			,output_as_binary 
 			, export_precision_digits 
 			, max_points_per_patch 
 			, voxel_grid_size ) 
@@ -216,14 +239,15 @@ SELECT rc_exportPlyFile_filename(
 		,file_name:='130116terMob2_2_LAMB93_000008.ply'
 		,where_point_text:=  ' pc_get(pt,''range'')< 50 AND (abs(pc_get(pt,''z_origin'') - pc_get(pt,''z''))<10 ) AND pc_get(pt,''num_echo'')=1 '  
 		, output_file_path :=  '/tmp/test_with_where.ply' 
+		,output_as_binary 
 		, export_precision_digits:= 3
 		, max_points_per_patch :=800
 		, voxel_grid_size:=0.05);
 
  
 
-DROP FUNCTION IF EXISTS   rc_exportPlyFile_area( patch_table_name regclass ,  attributes_types_and_name TEXT,area_geom_l93_wkt TEXT, where_patch_text TEXT, u_range_chosen int, where_point_text text , output_file_path TEXT, export_precision_digits  INT , max_points_per_patch integer , voxel_grid_size FLOAT); 
-CREATE OR REPLACE FUNCTION  rc_exportPlyFile_area(patch_table_name regclass,  attributes_types_and_name TEXT,area_geom_l93_wkt TEXT, where_patch_text TEXT , u_range_chosen int DEFAULT -1, where_point_text text DEFAULT NULL, output_file_path TEXT DEFAULT '/tmp/rc_exportPlyFile_with_where.ply', export_precision_digits INT DEFAULT 4, max_points_per_patch integer DEFAULT 30000, voxel_grid_size FLOAT DEFAULT 0.01)
+DROP FUNCTION IF EXISTS   rc_exportPlyFile_area( patch_table_name regclass ,  attributes_types_and_name TEXT,area_geom_l93_wkt TEXT, where_patch_text TEXT, u_range_chosen int, where_point_text text , output_file_path TEXT,output_as_binary BOOLEAN , export_precision_digits  INT , max_points_per_patch integer , voxel_grid_size FLOAT); 
+CREATE OR REPLACE FUNCTION  rc_exportPlyFile_area(patch_table_name regclass,  attributes_types_and_name TEXT,area_geom_l93_wkt TEXT, where_patch_text TEXT , u_range_chosen int DEFAULT -1, where_point_text text DEFAULT NULL, output_file_path TEXT DEFAULT '/tmp/rc_exportPlyFile_with_where.ply',output_as_binary BOOLEAN DEFAULT TRUE, export_precision_digits INT DEFAULT 4, max_points_per_patch integer DEFAULT 30000, voxel_grid_size FLOAT DEFAULT 0.01)
   RETURNS bigint AS
 $BODY$
 		--@brief : this function writes to disk the original ply file with asked attributes asked WARNING : not safe against SQL injection
@@ -265,6 +289,7 @@ $BODY$
 			, u_range_chosen  
 			, where_point_text 
 			, output_file_path  
+			,output_as_binary 
 			, export_precision_digits 
 			, max_points_per_patch 
 			, voxel_grid_size ) 
@@ -283,6 +308,33 @@ SELECT rc_exportPlyFile_area(
 		,u_range_chosen:=2
 		,where_point_text:= NULL
 		, output_file_path :=  '/ExportPointCloud/tata.ply' 
+		,output_as_binary := TRUE
 		, export_precision_digits:= 4
 		, max_points_per_patch :=800
 		, voxel_grid_size:=0.05);
+
+SELECT pc_get(pt,'x'), pc_get(pt,'y'), pc_get(pt,'z')
+FROM tmob_20140616.riegl_pcpatch_space  , pc_explodes(patch)
+LIMIT 100
+
+
+		
+		
+CREATE EXTENSION IF NOT EXISTS  plpythonu ; 
+
+CREATE OR REPLACE FUNCTION rc_AsciiPlyToBinaryPly(ascii_file text, binary_file text)
+ RETURNS boolean
+AS $$
+  # PL/Python function body
+import os ;
+sys_arg = "/usr/bin/RPly_convert -l "+ascii_file+" "+binary_file+"; rm "+ ascii_file+";"; 
+os_return = os.system(sys_arg) ;
+plpy.notice(os_return);
+return sys_arg;
+$$ 
+LANGUAGE plpythonu;
+
+
+SELECT rc_AsciiPlyToBinaryPly(
+	ascii_file :='/ExportPointCloud/Demo_Export_Ascii_Ply.ply'
+	, binary_file := '/ExportPointCloud/Demo_Export_Binary_Ply.ply') ;
