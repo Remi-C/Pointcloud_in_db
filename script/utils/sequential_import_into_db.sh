@@ -129,8 +129,18 @@ declare -i valeurModulo=$(echo "$4" | cut -f2 -d_)
 				FROM (
 					SELECT x,y,z
 						,PC_MakePoint(
-							2
-							, ARRAY[gps_time,x,y,z,x_origin,y_origin,z_origin,reflectance,range,theta,id,class,num_echo,nb_of_echo ]
+							6
+							, ARRAY[
+								round(gps_time::numeric,7)
+								,round(x::numeric,4)
+								,round(y::numeric,4)
+								,round(z::numeric,4)
+								,round(x_origin::numeric,4)
+								,round(y_origin::numeric,4)
+								,round(z_origin::numeric,4)
+								,round(reflectance::numeric,4)
+								,round(range::numeric,5)
+								,theta,id,class,num_echo,nb_of_echo ]
 							) AS point
 					FROM  temp_"$1"_$4_$boucle AS pcr
 					) table_point
