@@ -62,11 +62,39 @@ _(OPTIONAL) : refactor patches to merge patch with less than 5 points
 	UPDATE tmob_20140616.riegl_pcpatch_space SET file_name = substring(file_name,'.*/otho_laser/(.*\.ply)'); 
 	----
 	--index for Point number in a patch for riegl
-	CREATE INDEX ON acquisition_tmob_012013.riegl_pcpatch_space  ( file_name );
+	CREATE INDEX ON tmob_20140616.riegl_pcpatch_space  ( file_name );
 --▓▒░creating index on gid▓▒░-- 
 	--index for Point number in a patch for riegl
-	CREATE INDEX ON acquisition_tmob_012013.riegl_pcpatch_space  ( gid );	 
+	CREATE INDEX ON tmob_20140616.riegl_pcpatch_space  ( gid );	 
 
+--▓▒░creating a proxy table ▓▒░--
+	--▓▒░creating a proxy table ▓▒░--
+	CREATE TABLE tmob_20140616.riegl_pcpatch_proxy (
+		gid int  references  tmob_20140616.riegl_pcpatch_space(gid) 
+		,file_name text 
+		,sub_acq_number int
+		,sub_acq_order int
+		,num_points int
+		,geom geometry(multipolygon, 932012)
+		,points_per_level int[]
+	) ; 
+ 
+	INSERT INTO tmob_20140616.riegl_pcpatch_proxy  
+	SELECT gid
+		, file_name
+		, substring(file_name, '.*_(\d+)_.*')::int
+		, substring(file_name, '.*_(\d+)\.ply')::int
+		, pc_numpoints(patch) 
+		,ST_Multi(patch::geometry)
+	FROM tmob_20140616.riegl_pcpatch_space as rps  ;
+
+	CREATE INDEX ON tmob_20140616.riegl_pcpatch_proxy (gid) ;
+	CREATE INDEX ON tmob_20140616.riegl_pcpatch_proxy (file_name) ;
+	CREATE INDEX ON tmob_20140616.riegl_pcpatch_proxy (sub_acq_number) ;
+	CREATE INDEX ON tmob_20140616.riegl_pcpatch_proxy (sub_acq_order) ;
+	CREATE INDEX ON tmob_20140616.riegl_pcpatch_proxy (num_points) ;
+	CREATE INDEX ON tmob_20140616.riegl_pcpatch_proxy USING GIST(geom) ;
+ 
 
 /*
 --▓▒░ (OPTIONAL) : RIEGL:  refactor patches to merge patch with less than 5 points into patch 4*4*4metersif the time of acquisition is not too different▓▒░--
