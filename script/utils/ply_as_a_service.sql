@@ -11,9 +11,9 @@
 
 
 
-DROP FUNCTION IF EXISTS   rc_exportPlyFile_with_where( patch_table_name regclass ,  attributes_types_and_name TEXT,where_patch_text text,u_range_chosen int, where_point_text text ,output_file_path TEXT, output_as_binary BOOLEAN, export_precision_digits  INT , max_points_per_patch integer , voxel_grid_size FLOAT); 
-CREATE OR REPLACE FUNCTION  rc_exportPlyFile_with_where(patch_table_name regclass,  attributes_types_and_name TEXT,where_patch_text text DEFAULT 'gid=1', u_range_chosen int DEFAULT -1,where_point_text text DEFAULT NULL, output_file_path TEXT DEFAULT '/tmp/rc_exportPlyFile_with_where.ply', output_as_binary BOOLEAN DEFAULT TRUE, export_precision_digits INT DEFAULT 4, max_points_per_patch integer DEFAULT 30000, voxel_grid_size FLOAT DEFAULT 0.01)
-  RETURNS bigint AS
+DROP FUNCTION IF EXISTS   rc_exportPlyFile_with_where( patch_table_name regclass ,  attributes_types_and_name TEXT,where_patch_text text,u_range_chosen int, where_point_text text ,output_file_path TEXT, output_as_binary BOOLEAN, export_precision_digits  INT , max_points_per_patch integer , voxel_grid_size FLOAT,only_output_query BOOLEAN ); 
+CREATE OR REPLACE FUNCTION  rc_exportPlyFile_with_where(patch_table_name regclass,  attributes_types_and_name TEXT,where_patch_text text DEFAULT 'gid=1', u_range_chosen int DEFAULT -1,where_point_text text DEFAULT NULL, output_file_path TEXT DEFAULT '/tmp/rc_exportPlyFile_with_where.ply', output_as_binary BOOLEAN DEFAULT TRUE, export_precision_digits INT DEFAULT 4, max_points_per_patch integer DEFAULT 30000, voxel_grid_size FLOAT DEFAULT 0.01,only_output_query BOOLEAN DEFAULT FALSE, OUT num_points_written BIGINT, OUT query_text TEXT)
+AS
 $BODY$
 		--@brief : this function writes to disk the original ply file with asked attributes asked WARNING : not safe against SQL injection
 		--@param : patch_table_name : name of the table where the patches are, must be  
@@ -23,7 +23,7 @@ $BODY$
 		--@param : max_point_per_patch : negative or 0 : desactivate. wont write more than this number of points per patch. If there are more points in a patch, take max 1 point per voxel on a grid of size voxel_grid_size meter cell .
 		--@param : voxel_grid_size : if more than max_point_per_patch in a 1m3 patch, create voxels of size voxel_grid_size and take at most 1 point per voxel
 		DECLARE      
-			num_points int ;
+			num_points int :=0  ;
 			ply_header text;
 			query text; 
 			r record ;
@@ -38,16 +38,16 @@ $BODY$
 		END IF ; 
 
 		IF where_patch_text IS NOT NULL THEN
-			where_patch_text := replace(where_patch_text ,  'range','echo_range');
-			where_patch_text := replace(where_patch_text ,  'time','gps_time');
+			where_patch_text := replace(where_patch_text ,  '''range''','''echo_range'''); 
+			where_patch_text := replace(where_patch_text ,  '''time''','''gps_time''');  
 			where_patch_text := format(' (%s)=TRUE ',where_patch_text); 
 		ELSE 
 			where_patch_text := ' TRUE ' ; 
 		END IF;
 
 		IF where_point_text IS NOT NULL THEN
-			where_point_text := replace(where_point_text ,  'range','echo_range');
-			where_point_text := replace(where_point_text ,  'time','gps_time');
+			where_point_text := replace(where_point_text ,  '''range''','''echo_range''');
+			where_point_text := replace(where_point_text ,  '''time','gps_time''');
 			where_point_text := format(' (%s)=TRUE ',where_point_text); 
 		ELSE 
 			where_point_text := '  TRUE ';
@@ -163,22 +163,31 @@ comment property are generated on the fly
 		query := query || 
 		' ORDER BY PC_Get(pt,''gps_time'') ASC ' ;
 	END IF ;  
-	query:=query || format(' ) ) TO %L  ;',output_file_path ); 
+	
+	IF output_file_path ILIKE 'STDOUT%' THEN  --if writting to stdout, we need to remove quotes
+		query:=query ||  ' ) ) TO STDOUT  ;' ;
+	ELSE 
+		query:=query || format(' ) ) TO %L  ;',output_file_path ); 
+	END IF ;
 
 	--raise notice '%',query;  
-	EXECUTE query ;
-	GET DIAGNOSTICS num_points = ROW_COUNT ;	 
+	IF only_output_query = FALSE THEN
+		EXECUTE query ;
+		GET DIAGNOSTICS num_points = ROW_COUNT ;	 
 
-	IF output_as_binary = TRUE THEN 
-	--converting ascii ply to binary if necessary
-		query :=   format('SELECT rc_AsciiPlyToBinaryPly(
-				ascii_file :=''%s''
-				, binary_file := ''%s'') ;',output_file_path,initial_output_file_path);  
-		EXECUTE query ; 
-	END IF ; 
-	
+		IF output_as_binary = TRUE THEN 
+		--converting ascii ply to binary if necessary
+			query :=   format('SELECT rc_AsciiPlyToBinaryPly(
+					ascii_file :=''%s''
+					, binary_file := ''%s'') ;',output_file_path,initial_output_file_path);  
+			EXECUTE query ; 
+		END IF ; 
+	END IF ;
 	--returnging the num of points, we have to remove from the count the number of line of headers.
-	return num_points -header_fixed_line_number -(SELECT array_length(regexp_split_to_array(attributes_types_and_name , ','),1 ) ); 
+	--return num_points -header_fixed_line_number -(SELECT array_length(regexp_split_to_array(attributes_types_and_name , ','),1 ) ); 
+	num_points_written :=  num_points -header_fixed_line_number -(SELECT array_length(regexp_split_to_array(attributes_types_and_name , ','),1 ) ); 
+	query_text := query; 
+	RETURN ; 
 	 END ; 
 	$BODY$
   LANGUAGE plpgsql VOLATILE CALLED ON NULL INPUT  ;
@@ -191,11 +200,30 @@ SELECT   rc_exportPlyFile_with_where(
 		,where_patch_text:='file_name = ''130116terMob2_2_LAMB93_000008.ply''   '  
 		,u_range_chosen:=-1
 		,where_point_text:= 'pc_get(pt,''range'')< 50 AND (abs(pc_get(pt,''z_origin'') - pc_get(pt,''z''))<10 ) AND pc_get(pt,''num_echo'')=1 '  
-		, output_file_path :=  '/tmp/test_with_where.ply' 
-		,output_as_binary := TRUE ; 
+		, output_file_path :=  '/tmp/rc_exportPlyFile_with_where.ply' 
+		,output_as_binary := TRUE  
 		, export_precision_digits:= 3
 		, max_points_per_patch :=800
 		, voxel_grid_size:=0.05);
+
+		SELECT   *
+		FROM rc_exportPlyFile_with_where(
+		patch_table_name:='acquisition_tmob_012013.riegl_pcpatch_space'  -- 'tmob_20140616.riegl_pcpatch_space'
+		,attributes_types_and_name  := 'float32 x,float32 y,float32 z,float32 reflectance'
+		,where_patch_text:=' EXISTS (
+							SELECT 1 
+							FROM  trajectory.traj_paris_extractParis140616 AS traj 
+							WHERE traj.gid = 1  AND ST_Within( patch::geometry  ,ST_Transform( traj_surface ,932012) ) = TRUE
+							AND  tmob_20140616.rc_compute_range_for_a_patch(patch,''gps_time''::text) <@ numrange((start_time-1)::numeric,(end_time+1)::numeric) ) '  
+		,u_range_chosen:=-1
+		,where_point_text:= 'pc_get(pt,''range'')< 50 AND (abs(pc_get(pt,''z_origin'') - pc_get(pt,''z''))<10 ) AND pc_get(pt,''num_echo'')=1 '  
+		, output_file_path :=  'STDOUT' 
+		,output_as_binary := TRUE  
+		, export_precision_digits:= 3
+		, max_points_per_patch :=10
+		, voxel_grid_size:=0.05
+		,only_output_query:= true);
+ 
  
 
 		
