@@ -4,6 +4,24 @@
 #Prototype about loading pointcloud data into a database
 #This script load data into a database (single thread)
 #It should be called by the "parallel_import_into_db.sh" script
+
+
+
+#	Copyright 2013 Rémi C, IGN THALES 
+#
+#	This program is free software: you can redistribute it and/or modify
+#	it under the terms of the GNU Lesser General Public License as published by
+#	the Free Software Foundation, either version 3 of the License, or
+#	(at your option) any later version.
+#	This program is distributed in the hope that it will be useful,
+#	but WITHOUT ANY WARRANTY; without even the implied warranty of
+#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#	GNU Lesser General Public License for more details.
+#	You should have received a copy of the GNU Lesser General Public License
+#	along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+
 usage="
 ############################
 #INPUTS
@@ -165,8 +183,7 @@ declare -i valeurModulo=$(echo "$4" | cut -f2 -d_)
 				#importing points into temporary table
 				#Using script to load points into temp table
 				#echo "Importing points from $f file into temporary table temp_"$1"_$4_$boucle using script $5";
-				$5 temp_"$1"_$4_$boucle $f $6 $7;
-				
+				$5 temp_"$1"_$4_$boucle $f $6 "$7" ;
 			##
 			#Creating patches
 				##Creating velodyn spatial patches
@@ -177,9 +194,10 @@ declare -i valeurModulo=$(echo "$4" | cut -f2 -d_)
 					SELECT PC_MakePoint(3, ARRAY	[gps_time,echo_range,intensity,theta,block_id,fiber,x_laser,y_laser,z_laser,x,y,z,x_centre_laser,y_centre_laser,z_centre_laser] ) AS point
 					FROM  temp_"$1"_$4_$boucle AS pcr
 					) table_point
-				GROUP BY ROUND(PC_Get(point,'x')),ROUND(PC_Get(point,'y')),ROUND(PC_Get(point,'z'))
+				GROUP BY ROUND(1/2*PC_Get(point,'x')),ROUND(1/2*PC_Get(point,'y')),ROUND(1/2*PC_Get(point,'z'))
 				)
-				INSERT INTO $3 (geom, patch) SELECT to.insert.patch::geometry, to_insert.patch FROM to_insert;"
+				INSERT INTO $3 (patch) SELECT to_insert.patch FROM to_insert;";
+
 				echo "filling patch table $3 with spatial patch created from points from temp_"$1"_$4_$boucle";
 				$7 -c "$commande_sql";
 				

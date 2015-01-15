@@ -33,11 +33,11 @@
 	#point type : default : "Riegl_nouvelle_acquisition_TMobilita_Janvier_2013"
 		declare pointschema="Riegl_nouvelle_acquisition_TMobilita_Janvier_2013";
 	#Input data folder : default : "../data/riegl"
-		declare datafolder="../data/riegl";	
+		declare datafolder="../../riegl_sphere_ts";	
 	#name of the table where to write patches, schema qualified. Default : "acquisition_tmob_012013.riegl_pcpatch_space"
 		declare patchtable="acquisition_tmob_012013.riegl_pcpatch_space";
 	#number of parallel import: carefull, we need one cpu for parsing ply file and one cpu for psql instance, so this parameter should be at max : number_of_CPU/2
-		declare -i jobnumber=2;
+		declare -i jobnumber=12;
 	#name of the script to load one file into temporary table : default : "./utils/one_file_import_into_db.sh"
 		declare scriptplytotemporary="./utils/one_file_import_into_db.sh";
 	#name of the programm converting binary ply to ascii csv (separator = whitespace) , default : "./RPly_Ubuntu/bin/RPly_convert"

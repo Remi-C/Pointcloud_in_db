@@ -113,9 +113,8 @@ declare -i valeurModulo=$(echo "$4" | cut -f2 -d_)
 				num_echo bigint,
 				nb_of_echo bigint,
 				amplitude real,
-				reflectance real,
-				deviation real,
-				background_radiation float);";
+				reflectance real, 
+				deviation float);";
 				#echo "Deleting/creating temporary point table temp_"$1"_$4_$boucle";
 				$7 -c "$commande_sql";
 			##	
@@ -130,16 +129,18 @@ declare -i valeurModulo=$(echo "$4" | cut -f2 -d_)
 			#Creating patches
 				##Creating riegl patches
 				echo "filling patch table $3 with spatial patch created from points from temp_"$1"_$4_$boucle";
-				commande_sql="
-				WITH to_insert AS (
-				SELECT PC_patch(point) AS patch
+				commande_sql=" 
+				INSERT INTO $3 (file_name,patch) SELECT '"$f"',to_insert.patch 
 				FROM (
-					SELECT PC_MakePoint(2, ARRAY[gps_time,x_sensor,y_sensor,z_sensor,x_origin_sensor,y_origin_sensor,z_origin_sensor,x,y,z,x_origin,y_origin,z_origin,echo_range,theta,phi,num_echo,nb_of_echo,amplitude,reflectance,deviation,background_radiation::float] ) AS point
-					FROM  temp_"$1"_$4_$boucle AS pcr
-					) table_point
-				GROUP BY ROUND(PC_Get(point,'x')),ROUND(PC_Get(point,'y')),ROUND(PC_Get(point,'z'))
-				)
-				INSERT INTO $3 (patch) SELECT to_insert.patch FROM to_insert;";
+					SELECT PC_patch(point ORDER BY gps_time ASC) AS patch
+					FROM (
+						SELECT x,y,z,gps_time,  PC_MakePoint(5,
+							ARRAY[gps_time,x_sensor,y_sensor,z_sensor,x_origin_sensor,y_origin_sensor,z_origin_sensor,x,y,z,x_origin,y_origin,z_origin,echo_range,theta,phi,num_echo,nb_of_echo,amplitude,reflectance,deviation ] ) AS point 
+						FROM temp_"$1"_$4_$boucle AS pcr
+						) table_point
+						GROUP BY ROUND(z),ROUND(x),ROUND(y) 
+					) AS to_insert 
+				;";
 				$7 -c "$commande_sql";
 				
 				
@@ -183,8 +184,7 @@ declare -i valeurModulo=$(echo "$4" | cut -f2 -d_)
 				#importing points into temporary table
 				#Using script to load points into temp table
 				#echo "Importing points from $f file into temporary table temp_"$1"_$4_$boucle using script $5";
-				$5 temp_"$1"_$4_$boucle $f $6 $7;
-				
+				$5 temp_"$1"_$4_$boucle $f $6 "$7" ;
 			##
 			#Creating patches
 				##Creating velodyn spatial patches
@@ -195,9 +195,11 @@ declare -i valeurModulo=$(echo "$4" | cut -f2 -d_)
 					SELECT PC_MakePoint(3, ARRAY	[gps_time,echo_range,intensity,theta,block_id,fiber,x_laser,y_laser,z_laser,x,y,z,x_centre_laser,y_centre_laser,z_centre_laser] ) AS point
 					FROM  temp_"$1"_$4_$boucle AS pcr
 					) table_point
-				GROUP BY ROUND(PC_Get(point,'x')),ROUND(PC_Get(point,'y')),ROUND(PC_Get(point,'z'))
+				GROUP BY ROUND(PC_Get(point,'x')*1/2),ROUND(PC_Get(point,'y')*1/2),ROUND(PC_Get(point,'z')*1/2)
+
 				)
-				INSERT INTO $3 (geom, patch) SELECT to.insert.patch::geometry, to_insert.patch FROM to_insert;"
+				INSERT INTO $3 (patch) SELECT to_insert.patch FROM to_insert;";
+
 				echo "filling patch table $3 with spatial patch created from points from temp_"$1"_$4_$boucle";
 				$7 -c "$commande_sql";
 				
@@ -214,7 +216,8 @@ declare -i valeurModulo=$(echo "$4" | cut -f2 -d_)
 			#Not processing the file because of it's number 
 			#echo "Not processing the $f file because of it's number ";
 			echo "";
-		fi 
+			
+		fi  
 		boucle=$boucle+1;
 	done
 exit 0
