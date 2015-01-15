@@ -18,7 +18,7 @@
 _creating time index
 _...
 ***/
-	SET search_path TO benchmark, public;
+	SET search_path TO benchmark_cassette_2013, public;
 --▓▒░define the function used for range indexing on an atribute▓▒░--
 
 		----
@@ -48,7 +48,7 @@ _...
 	----
 	--On riegl
 		CREATE INDEX ON riegl_pcpatch_space USING GIST (CAST(patch AS geometry));
-		CREATE INDEX ON riegl_pcpatch_space USING GIST (ST_SetSRID(CAST(patch AS geometry ),932011));
+		--CREATE INDEX ON riegl_pcpatch_space USING GIST (ST_SetSRID(CAST(patch AS geometry ),932011));
 	----
 	
 --▓▒░creating time index▓▒░--
