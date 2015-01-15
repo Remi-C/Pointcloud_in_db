@@ -24,11 +24,11 @@ _(OPTIONAL) : refactor patches to merge patch with less than 5 points
 
 		----
 		--deelte function if it exists
-		DROP FUNCTION IF EXISTS acquisition_tmob_012013.rc_compute_range_for_a_patch(PCPATCH,text);
+		DROP FUNCTION IF EXISTS tmob_20140616.rc_compute_range_for_a_patch(PCPATCH,text);
 
 		----
 		--creating function
-		CREATE OR REPLACE FUNCTION acquisition_tmob_012013.rc_compute_range_for_a_patch(patch PCPATCH, nom_grandeur_pour_interval text)
+		CREATE OR REPLACE FUNCTION tmob_20140616.rc_compute_range_for_a_patch(patch PCPATCH, nom_grandeur_pour_interval text)
 		RETURNS NUMRANGE AS $$ 
 		BEGIN
 		/*
@@ -45,49 +45,30 @@ _(OPTIONAL) : refactor patches to merge patch with less than 5 points
 		LIMIT 100
 		*/
 
---▓▒░creating spatial index▓▒░--
-	----
-	--On riegl
-		CREATE INDEX acquisition_tmob_012013_riegl_pcpatch_space_patch_gist_2D ON acquisition_tmob_012013.riegl_pcpatch_space USING GIST (CAST(patch AS geometry));
-	----
-	--on velodyn
-		CREATE INDEX acquisition_tmob_012013_velo_pcpatch_space_patch_gist_2D ON acquisition_tmob_012013.velo_pcpatch_space USING GIST (CAST(patch AS geometry));
-
-
-	
---▓▒░creating time index▓▒░--
-
-	----
-	--time index on riegl
-		CREATE INDEX acquisition_tmob_012013_riegl_pcpatch_space_patch_gist_range_gps_time
-			ON acquisition_tmob_012013.riegl_pcpatch_space
-			USING GIST ( acquisition_tmob_012013.rc_compute_range_for_a_patch(patch,'gps_time'));
-	--time index on velo
-		CREATE INDEX acquisition_tmob_012013_velo_pcpatch_space_patch_gist_range_gps_time 
-			ON acquisition_tmob_012013.velo_pcpatch_space
-			USING GIST ( acquisition_tmob_012013.rc_compute_range_for_a_patch(patch,'gps_time'));
-
-
---▓▒░creating index on points number in patch▓▒░--
-	----
-	--index for Point number in a patch for riegl
-		CREATE INDEX acquisition_tmob_012013_riegl_pcpatch_space_patch_btree_pc_numpoints
-			ON acquisition_tmob_012013.riegl_pcpatch_space
-			USING BTREE (Pc_NumPoints(patch));
-	----
-	--index for Point number in a patch for riegl
-		CREATE INDEX acquisition_tmob_012013_velo_pcpatch_space_patch_btree_pc_numpoints
-			ON acquisition_tmob_012013.velo_pcpatch_space
-			USING BTREE (Pc_NumPoints(patch));
+--▓▒░creating spatial index▓▒░-- 
+	CREATE INDEX ON tmob_20140616.riegl_pcpatch_space USING GIST (CAST(patch AS geometry));
+--▓▒░creating time index▓▒░
+	CREATE INDEX ON tmob_20140616.riegl_pcpatch_space
+		USING GIST ( tmob_20140616.rc_compute_range_for_a_patch(patch,'gps_time')); 
+--▓▒░creating Z index▓▒░
+	CREATE INDEX ON tmob_20140616.riegl_pcpatch_space
+		USING GIST ( tmob_20140616.rc_compute_range_for_a_patch(patch,'Z')); 
+--▓▒░creating index on points number in patch▓▒░-- 
+	CREATE INDEX ON tmob_20140616.riegl_pcpatch_space
+		USING BTREE (Pc_NumPoints(patch)); 
 
 --▓▒░creating index on file_name of patch▓▒░--
+	--correcting the file name : dropping the fixed path
+	UPDATE tmob_20140616.riegl_pcpatch_space SET file_name = substring(file_name,'.*/otho_laser/(.*\.ply)'); 
 	----
 	--index for Point number in a patch for riegl
-		CREATE INDEX acquisition_tmob_012013_riegl_pcpatch_space_patch_btree_file_name
-			ON acquisition_tmob_012013.riegl_pcpatch_space
-			 ( file_name );
-	 
+	CREATE INDEX ON acquisition_tmob_012013.riegl_pcpatch_space  ( file_name );
+--▓▒░creating index on gid▓▒░-- 
+	--index for Point number in a patch for riegl
+	CREATE INDEX ON acquisition_tmob_012013.riegl_pcpatch_space  ( gid );	 
 
+
+/*
 --▓▒░ (OPTIONAL) : RIEGL:  refactor patches to merge patch with less than 5 points into patch 4*4*4metersif the time of acquisition is not too different▓▒░--
 
 	----
@@ -132,7 +113,7 @@ _(OPTIONAL) : refactor patches to merge patch with less than 5 points
 		--vacuum analyze on original table
 		VACUUM ANALYZE acquisition_tmob_012013.riegl_pcpatch_space
  
-		
+*/
 
 
 
