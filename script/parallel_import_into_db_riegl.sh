@@ -33,9 +33,9 @@
 	#point type : default : "Riegl_nouvelle_acquisition_TMobilita_Janvier_2013"
 		declare pointschema="Riegl_nouvelle_acquisition_TMobilita_Janvier_2013";
 	#Input data folder : default : "../data/riegl_"
-		declare datafolder="/media/chantier_tmob_140616";	
+		declare datafolder="/media/big2to/stereopolis/2014_04_PARIS/20140616/Laser";	
 	#name of the table where to write patches, schema qualified. Default : "acquisition_tmob_012013.riegl_pcpatch_space"
-		declare patchtable="tmob_140616_recal.riegl_pcpatch_space";
+		declare patchtable="tmob_20140616.riegl_pcpatch_space_int";
 	#number of parallel import: carefull, we need one cpu for parsing ply file and one cpu for psql instance, so this parameter should be at max : number_of_CPU/2
 		declare -i jobnumber=6;
 	#name of the script to load one file into temporary table : default : "./utils/one_file_import_into_db.sh"

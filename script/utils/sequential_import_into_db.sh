@@ -79,6 +79,7 @@ declare -i valeurModulo=$(echo "$4" | cut -f2 -d_)
 	shopt -s nullglob;  #Safeguard to do nothing if the data folder is empty
 	for f in $2/*.ply
 	do
+		echo `date +"%T"` >> ./log_timings
 		echo "boucle : $boucle";
 		if (($boucle%$unsurN==$valeurModulo))
 		then
@@ -134,11 +135,14 @@ declare -i valeurModulo=$(echo "$4" | cut -f2 -d_)
 				FROM (
 					SELECT PC_patch(point ORDER BY gps_time ASC) AS patch
 					FROM (
-						SELECT x,y,z,gps_time,  PC_MakePoint(5,
-							ARRAY[gps_time,x_sensor,y_sensor,z_sensor,x_origin_sensor,y_origin_sensor,z_origin_sensor,x,y,z,x_origin,y_origin,z_origin,echo_range,theta,phi,num_echo,nb_of_echo,amplitude,reflectance,deviation ] ) AS point 
+						SELECT x,y,z,gps_time,  PC_MakePoint(6,
+							ARRAY[gps_time,x_sensor,y_sensor,z_sensor,x_origin_sensor,y_origin_sensor,z_origin_sensor
+							,x+650000,y+6860000,z
+							,x_origin+650000,y_origin+6860000,z_origin
+							,echo_range,theta,phi,num_echo,nb_of_echo,amplitude,reflectance,deviation ] ) AS point 
 						FROM temp_"$1"_$4_$boucle AS pcr
 						) table_point
-						GROUP BY ROUND(z),ROUND(x),ROUND(y) 
+						GROUP BY ROUND(z+0.5),ROUND(x+0.5),ROUND(y+0.5) 
 					) AS to_insert 
 				;";
 				$7 -c "$commande_sql";
@@ -217,8 +221,11 @@ declare -i valeurModulo=$(echo "$4" | cut -f2 -d_)
 			#echo "Not processing the $f file because of it's number ";
 			echo "";
 			
+			
 		fi  
+		
 		boucle=$boucle+1;
+		echo `date +"%T"` >> ./log_timings
 	done
 exit 0
 

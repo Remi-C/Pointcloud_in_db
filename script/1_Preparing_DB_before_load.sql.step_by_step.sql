@@ -288,7 +288,7 @@
 	--Creating the XML  schema for points acquired by a riegl laser:
 			--creating an entry for this schema
 			--DELETE FROM pointcloud_formats where pcid = 4
-			INSERT INTO pointcloud_formats (pcid, srid, nom_schema) VALUES (4, 932011,'Riegl_nouvelle_acquisition_TMobilita_Janvier_2013_deviation');--On crée un nouveau schema
+			INSERT INTO pointcloud_formats (pcid, srid, nom_schema) VALUES (6, 931008,'Riegl_nouvelle_acquisition_TMobilita_Janvier_2013_deviation');--On crée un nouveau schema
 			--Filling the entry
 			UPDATE public.pointcloud_formats SET schema = 
 			$$<?xml version="1.0" encoding="UTF-8"?>	<!-- RIEGL Laser schema, for cmm algorithm -->
@@ -327,7 +327,7 @@
 			    <pc:size>8</pc:size>
 			    <pc:description>le temps GPS du moement de l acquisition du points. Note : il faudrait utiliser l offset et s assurer qu il n y a pas de decallage</pc:description>
 			    <pc:name>GPS_time</pc:name>
-			    <pc:interpretation>double</pc:interpretation>
+			    <pc:interpretation>uint64_t</pc:interpretation>
 			    <pc:scale>0.000001</pc:scale>
 				<pc:offset>0</pc:offset>
 			  </pc:dimension>
@@ -338,7 +338,7 @@
 			    <pc:size>4</pc:size>
 			    <pc:description>x_sensor : coorodnnée du point dans le repere du laser, du genre qq metres</pc:description>
 			    <pc:name>x_sensor</pc:name>
-			    <pc:interpretation>float</pc:interpretation>
+			    <pc:interpretation>int32_t</pc:interpretation>
 			    <pc:scale>0.001</pc:scale>
 				<pc:offset>0</pc:offset>
 			  </pc:dimension>
@@ -347,7 +347,7 @@
 			    <pc:size>4</pc:size>
 			    <pc:description>y_sensor : coorodnnée du point dans le repere du laser, du genre qq metres</pc:description>
 			    <pc:name>y_sensor</pc:name>
-			    <pc:interpretation>float</pc:interpretation>
+			    <pc:interpretation>int32_t</pc:interpretation>
 			    <pc:scale>0.001</pc:scale>
 				<pc:offset>0</pc:offset>
 			  </pc:dimension>
@@ -356,7 +356,7 @@
 			    <pc:size>4</pc:size>
 			    <pc:description>z_sensor : coorodnnée du point dans le repere du laser, du genre qq metres</pc:description>
 			    <pc:name>z_sensor</pc:name>
-			    <pc:interpretation>float</pc:interpretation>
+			    <pc:interpretation>int32_t</pc:interpretation>
 			    <pc:scale>0.001</pc:scale>
 				<pc:offset>0</pc:offset>
 			  </pc:dimension>
@@ -368,7 +368,7 @@
 			    <pc:size>4</pc:size>
 			    <pc:description>x_origin_sensor : coorodnnée de la position du laser au moment de l acquisition dans le  point dans le repere du laser, du genre qq centimetre : decrit une hellicoide</pc:description>
 			    <pc:name>x_origin_sensor</pc:name>
-			    <pc:interpretation>float</pc:interpretation>
+			    <pc:interpretation>int32_t</pc:interpretation>
 			    <pc:scale>0.00001</pc:scale>
 				<pc:offset>0</pc:offset>
 			  </pc:dimension>
@@ -377,7 +377,7 @@
 			    <pc:size>4</pc:size>
 			    <pc:description>y_origin_sensor : coorodnnée de la position du laser au moment de l acquisition dans le  point dans le repere du laser, du genre qq centimetre : decrit une hellicoide</pc:description>
 			    <pc:name>y_origin_sensor</pc:name>
-			    <pc:interpretation>float</pc:interpretation>
+			    <pc:interpretation>int32_t</pc:interpretation>
 			    <pc:scale>0.00001</pc:scale>
 				<pc:offset>0</pc:offset>
 			  </pc:dimension>
@@ -386,7 +386,7 @@
 			    <pc:size>4</pc:size>
 			    <pc:description>z_origin_sensor : coorodnnée de la position du laser au moment de l acquisition dans le  point dans le repere du laser, du genre qq centimetre : decrit une hellicoide</pc:description>
 			    <pc:name>z_origin_sensor</pc:name>
-			    <pc:interpretation>float</pc:interpretation>
+			    <pc:interpretation>int32_t</pc:interpretation>
 			    <pc:scale>0.00001</pc:scale>
 				<pc:offset>0</pc:offset>
 			  </pc:dimension>
@@ -394,28 +394,28 @@
 			 <!-- point dans repere Lambert 93 en metre (modulo transformation)-->
 			 <pc:dimension>
 			    <pc:position>8</pc:position>
-			    <pc:size>5</pc:size>
+			    <pc:size>4</pc:size>
 			    <pc:description>Coordonnées X du point dans le repere Lambert 93, en metre, attention a l offset</pc:description>
 			    <pc:name>x</pc:name>
-			    <pc:interpretation>double</pc:interpretation>
+			    <pc:interpretation>int32_t</pc:interpretation>
 			    <pc:scale>0.001</pc:scale>
-				<pc:offset>649000</pc:offset>
+				<pc:offset>650000</pc:offset>
 			  </pc:dimension>
 			   <pc:dimension>
 			    <pc:position>9</pc:position>
-			    <pc:size>5</pc:size>
+			    <pc:size>4</pc:size>
 			    <pc:description>Coordonnées Y du point dans le repere Lambert 93, en metre, attention a l offset</pc:description>
 			    <pc:name>y</pc:name>
-			    <pc:interpretation>double</pc:interpretation>
+			    <pc:interpretation>int32_t</pc:interpretation>
 			    <pc:scale>0.001</pc:scale>
-				<pc:offset>6840000</pc:offset>
+				<pc:offset>6860000</pc:offset>
 			  </pc:dimension>
 				<pc:dimension>
 			    <pc:position>10</pc:position>
-			    <pc:size>5</pc:size>
+			    <pc:size>4</pc:size>
 			    <pc:description>Coordonnées Z du point dans le repere Lambert 93, en metre, attention a l offset</pc:description>
 			    <pc:name>z</pc:name>
-			    <pc:interpretation>float</pc:interpretation>
+			    <pc:interpretation>int32_t</pc:interpretation>
 			    <pc:scale>0.001</pc:scale>
 				<pc:offset>0</pc:offset>
 			  </pc:dimension>
@@ -424,29 +424,29 @@
 			 <!-- origine du senseur dans repere Lambert93 (modulo translation)-->
 			 <pc:dimension>
 			    <pc:position>11</pc:position>
-			    <pc:size>5</pc:size>
+			    <pc:size>4</pc:size>
 			    <pc:description>Coordonnées X du senseur dans le repere Lambert 93, en metre, attention a l offset</pc:description>
 			    <pc:name>x_origin</pc:name>
-			    <pc:interpretation>float</pc:interpretation>
-			    <pc:scale>0.0001</pc:scale>
-				<pc:offset>649000</pc:offset>
+			    <pc:interpretation>int32_t</pc:interpretation>
+			    <pc:scale>0.001</pc:scale>
+				<pc:offset>650000</pc:offset>
 			  </pc:dimension>
 			<pc:dimension>
 			    <pc:position>12</pc:position>
-			    <pc:size>5</pc:size>
+			    <pc:size>4</pc:size>
 			    <pc:description>Coordonnées Y du senseur dans le repere Lambert 93, en metre, attention a l offset</pc:description>
 			    <pc:name>y_origin</pc:name>
-			    <pc:interpretation>float</pc:interpretation>
-			    <pc:scale>0.0001</pc:scale>
-				<pc:offset>6840000</pc:offset>
+			    <pc:interpretation>int32_t</pc:interpretation>
+			    <pc:scale>0.001</pc:scale>
+				<pc:offset>6860000</pc:offset>
 			  </pc:dimension>
 			<pc:dimension>
 			    <pc:position>13</pc:position>
-			    <pc:size>5</pc:size>
+			    <pc:size>4</pc:size>
 			    <pc:description>Coordonnées Z du senseur dans le repere Lambert 93, en metre,</pc:description>
 			    <pc:name>z_origin</pc:name>
-			    <pc:interpretation>float</pc:interpretation>
-			    <pc:scale>0.0001</pc:scale>
+			    <pc:interpretation>int32_t</pc:interpretation>
+			    <pc:scale>0.001</pc:scale>
 				<pc:offset>0</pc:offset>
 			  </pc:dimension>
 			 
@@ -457,7 +457,7 @@
 			    <pc:size>4</pc:size>
 			    <pc:description>Valeur du temps de vol lors de lacquisition. de env 2.25 a + de 400, probablement en milli. Il faudrait determiner le scale proprement</pc:description>
 			    <pc:name>echo_range</pc:name>
-			    <pc:interpretation>float</pc:interpretation>
+			    <pc:interpretation>int32_t</pc:interpretation>
 			    <pc:scale>0.001</pc:scale>
 				<pc:offset>0</pc:offset>
 			  </pc:dimension>
@@ -475,7 +475,7 @@
 			    <pc:size>4</pc:size>
 			    <pc:description>un autre angle entre la direction d acquision et ???, codé enrte -0.005 et -0.004. Il faudrait regler loffset</pc:description>
 			    <pc:name>phi</pc:name>
-			    <pc:interpretation>float</pc:interpretation>
+			    <pc:interpretation>int32_t</pc:interpretation>
 			    <pc:scale>0.000001</pc:scale>
 				<pc:offset>0</pc:offset>
 			  </pc:dimension>
@@ -486,14 +486,14 @@
 
 			    <pc:dimension>
 			    <pc:position>17</pc:position>
-			    <pc:size>4</pc:size>
+			    <pc:size>1</pc:size>
 			    <pc:description>le numero du retour dont ona tire le point (entre 1 et 4)</pc:description>
 			    <pc:name>num_echo</pc:name>
 			    <pc:interpretation>uint8_t</pc:interpretation> 
 			  </pc:dimension>
 			    <pc:dimension>
 			    <pc:position>18</pc:position>
-			    <pc:size>4</pc:size>
+			    <pc:size>1</pc:size>
 			    <pc:description>le nombre d echos obtenu par le rayon quia  donne ce point </pc:description>
 			    <pc:name>nb_of_echo</pc:name>
 			    <pc:interpretation>uint8_t</pc:interpretation> 
@@ -505,8 +505,8 @@
 			    <pc:size>4</pc:size>
 			    <pc:description>l amplitude de l onde de retour, attention : peut etre faux lors de retour multiples</pc:description>
 			    <pc:name>amplitude</pc:name>
-			    <pc:interpretation>float</pc:interpretation>
-			    <pc:scale>0.0001</pc:scale>
+			    <pc:interpretation>int32_t</pc:interpretation>
+			    <pc:scale>0.01</pc:scale>
 				<pc:offset>0</pc:offset>
 			  </pc:dimension>
 			  <pc:dimension>
@@ -514,16 +514,16 @@
 			    <pc:size>4</pc:size>
 			    <pc:description>l amplitude de l onde de retour corrigee de la distance, attention : peut etre faux lors de retour multiples, attention : impropre pour classification, la corriger par formule trouveepar remi cura</pc:description>
 			    <pc:name>reflectance</pc:name>
-			    <pc:interpretation>float</pc:interpretation>
+			    <pc:interpretation>int32_t</pc:interpretation>
 			    <pc:scale>0.0001</pc:scale>
 				<pc:offset>0</pc:offset>
 			  </pc:dimension>
 			    <pc:dimension>
 			    <pc:position>21</pc:position>
-			    <pc:size>4</pc:size>
+			    <pc:size>2</pc:size>
 			    <pc:description>Une grandeur que je ne connais pas, entre -1 et plusieurs dizaine de milliers , par pas de 1</pc:description>
 			    <pc:name>deviation</pc:name>
-			    <pc:interpretation>float</pc:interpretation>
+			    <pc:interpretation>int16_t</pc:interpretation>
 			    <pc:scale>1</pc:scale>
 				<pc:offset>0</pc:offset>
 			  </pc:dimension> 
@@ -546,7 +546,7 @@
 		CREATE TABLE acquisition_tmob_012013.riegl_pcpatch_space(
 			gid SERIAL,
 			file_name text,
-			patch PCPATCH(4)
+			patch PCPATCH(6)
 		);
 	----
 	--Creating table for Velodyn laser, for space partitionning

@@ -44,6 +44,41 @@ _(OPTIONAL) : refactor patches to merge patch with less than 5 points
 		FROM acquisition_tmob_012013.velo_pcpatch_space
 		LIMIT 100
 		*/
+		
+--▓▒░creating proxy table▓▒░--
+DROP TABLE IF EXISTS tmob_20140616.riegl_pcpatch_space_int_proxy ;
+CREATE TABLE tmob_20140616.riegl_pcpatch_space_int_proxy 	
+	(
+	gid serial references tmob_20140616.riegl_pcpatch_space_int(gid)
+	,file_name text
+	, sub_acq_number int
+	, sub_acq_order int
+	,num_points int
+	,avg_Z numrange
+	,avg_time numrange
+	,geom geometry(polygon, 931008) 
+	) ;
+	
+--▓▒░filling proxy table▓▒░--
+INSERT INTO tmob_20140616.riegl_pcpatch_space_int_proxy
+SELECT gid
+	, substring(file_name,'.*/Laser/(.*\.ply)')
+	, substring(file_name,'.*/Laser/.*_(\d*)_.*\.ply')::int
+	, substring(file_name,'.*/Laser/.*_(\d*)\.ply')::int
+	,pc_numpoints(patch)
+	,rc_compute_range_for_a_patch(patch, 'Z')
+	,rc_compute_range_for_a_patch(patch, 'GPS_time')
+	, patch::geometry(polygon, 931008)
+FROM tmob_20140616.riegl_pcpatch_space_int
+
+CREATE INDEX ON tmob_20140616.riegl_pcpatch_space_int_proxy (gid);
+CREATE INDEX ON tmob_20140616.riegl_pcpatch_space_int_proxy (file_name);
+CREATE INDEX ON tmob_20140616.riegl_pcpatch_space_int_proxy (sub_acq_number);
+CREATE INDEX ON tmob_20140616.riegl_pcpatch_space_int_proxy (sub_acq_order);
+CREATE INDEX ON tmob_20140616.riegl_pcpatch_space_int_proxy (num_points);
+CREATE INDEX ON tmob_20140616.riegl_pcpatch_space_int_proxy (avg_Z );
+CREATE INDEX ON tmob_20140616.riegl_pcpatch_space_int_proxy (avg_time);
+CREATE INDEX ON tmob_20140616.riegl_pcpatch_space_int_proxy USING GIST(geom);
 
 --▓▒░creating spatial index▓▒░-- 
 	CREATE INDEX ON tmob_20140616.riegl_pcpatch_space USING GIST (CAST(patch AS geometry));
