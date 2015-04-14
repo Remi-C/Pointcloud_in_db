@@ -43,6 +43,36 @@ _...
 		FROM acquisition_tmob_012013.velo_pcpatch_space
 		LIMIT 100
 		*/
+		
+--▓▒░creating proxy table▓▒░--
+	DROP TABLE IF EXISTS vosges_2011.las_vosges_int_proxy ;
+	CREATE TABLE vosges_2011.las_vosges_int_proxy 
+	(
+	gid serial references vosges_2011.las_vosges_int(gid)
+	,file_name text
+	,num_points int
+	,avg_Z numrange
+	,avg_time numrange
+	,geom geometry(polygon, 931008) 
+	) ;
+	CREATE INDEX ON vosges_2011.las_vosges_int_proxy (gid) ;
+	CREATE INDEX ON vosges_2011.las_vosges_int_proxy (file_name) ;
+	CREATE INDEX ON vosges_2011.las_vosges_int_proxy (num_points) ;
+	CREATE INDEX ON vosges_2011.las_vosges_int_proxy (avg_Z) ;
+	CREATE INDEX ON vosges_2011.las_vosges_int_proxy (avg_time) ;
+	CREATE INDEX ON vosges_2011.las_vosges_int_proxy USING GIST(geom) ;
+
+--fill proxy table
+INSERT INTO vosges_2011.las_vosges_int_proxy
+SELECT gid
+	,substring(file_name,'.*/las/(.*\.las)')
+	,pc_numpoints(patch)
+	,vosges_2011.rc_compute_range_for_a_patch(patch, 'Z')
+	,vosges_2011.rc_compute_range_for_a_patch(patch, 'GPS_time')
+	,patch::geometry
+FROM vosges_2011.las_vosges_int ;
+
+
 
 --▓▒░creating spatial index▓▒░--
 	----

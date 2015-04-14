@@ -77,8 +77,9 @@ declare -i valeurModulo=$(echo "$4" | cut -f2 -d_)
 	#Looking for every *.las in the folder and getting one on N
 	declare -i boucle=0; #loop variable
 	shopt -s nullglob;  #Safeguard to do nothing if the data folder is empty
-	for f in $2/*.las
+	for f in $2/*_*.las
 	do
+		echo `date +"%T"` >> ./log_timings
 		echo "boucle : $boucle";
 		if (($boucle%$unsurN==$valeurModulo))
 		then
@@ -123,7 +124,7 @@ declare -i valeurModulo=$(echo "$4" | cut -f2 -d_)
 				SELECT PC_patch(point ORDER BY gps_time ASC) AS patch
 				FROM (
 					SELECT x,y,gps_time,
-						PC_MakePoint(2,   
+						PC_MakePoint(3,   
 						ARRAY[ X,Y,Z,gps_time,intensity,  classification,return_number, tot_return_number,pt_src_id]) AS point
 					FROM  temp_las_$4_$boucle AS pcr
 					) table_point
@@ -141,8 +142,6 @@ declare -i valeurModulo=$(echo "$4" | cut -f2 -d_)
 				echo "the patch table $3 has been filled with patch based on points from $f, deleting the useless temp temp_"$1"_$4_$boucle  table";
 				$7 -c "$commande_sql";
 				
-				
- 
 			else 
 				echo "Not doing anything : you have to specify correctly the parameter 1 : "$1"";
 			fi 	
@@ -152,6 +151,7 @@ declare -i valeurModulo=$(echo "$4" | cut -f2 -d_)
 			echo "";
 		fi 
 		boucle=$boucle+1;
+		echo `date +"%T"` >> ./log_timings
 		
 	done
 exit 0

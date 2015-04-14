@@ -101,7 +101,7 @@
 		INSERT INTO pointcloud_formats (pcid, srid, nom_schema) VALUES (2, 931008,'lidar_airborn_vosges_2011');--On crée un nouveau schema
 		--On va remplir ce nouveau schéma
 		UPDATE public.pointcloud_formats SET schema = 
-		$$<?xml version="1.0" encoding="UTF-8"?><!-- lidar_airborn_vosges_2011 -->
+		$$<?xml version="1.0" encoding="UTF-8"?><!-- lidar_airborn_vosges_2011_with_correct_scaling -->
 			<!--  header  :  
 				 las2txt -parse xyzticrn -sep space -i 000001.las -o 000001.txt
 				x,y,z : lamb93 coordinate of the point
@@ -116,33 +116,33 @@
 			    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 			  <pc:dimension>
 			    <pc:position>1</pc:position>
-			    <pc:size>8</pc:size>
-			    <pc:description> The X coordinate in Lambert 93 French referetnial</pc:description>
+			    <pc:size>4</pc:size>
+			    <pc:description> The X coordinate in Lambert 93 French referential</pc:description>
 			    <pc:name>x</pc:name>
-			    <pc:interpretation>double</pc:interpretation>
+			    <pc:interpretation>int32_t</pc:interpretation>
 			    <pc:scale>0.01</pc:scale>
-				<pc:offset>0</pc:offset>
+				<pc:offset>1010000</pc:offset>
 			  </pc:dimension>
 
 			  <pc:dimension>
 			    <pc:position>2</pc:position>
-			    <pc:size>8</pc:size>
+			    <pc:size>4</pc:size>
 			    <pc:description> The Y coordinate in Lambert 93 French referetnial</pc:description>
 			    <pc:name>y</pc:name>
-			    <pc:interpretation>double</pc:interpretation>
+			    <pc:interpretation>int32_t</pc:interpretation>
 			    <pc:scale>0.01</pc:scale>
-				<pc:offset>0</pc:offset>
+				<pc:offset>6790000</pc:offset>
 			  </pc:dimension>
 
 			  <pc:dimension>
 			    <pc:position>3</pc:position>
-			    <pc:size>8</pc:size>
+			    <pc:size>4</pc:size>
 			    <pc:description> The Z coordinate in Lambert 93 French referetnial</pc:description>
 			    <pc:name>z</pc:name>
-			    <pc:interpretation>double</pc:interpretation>
+			    <pc:interpretation>int32_t</pc:interpretation>
 			    <pc:scale>0.01</pc:scale>
-				<pc:offset>0</pc:offset>
-			  </pc:dimension>
+				<pc:offset>400</pc:offset>
+			  </pc:dimension> 
 			  
 			 
 			  <pc:dimension>
@@ -150,20 +150,20 @@
 			    <pc:size>8</pc:size>
 			    <pc:description> The gps_time at the precise moement of point acquisition</pc:description>
 			    <pc:name>gps_time</pc:name>
-			    <pc:interpretation>double</pc:interpretation>
-			    <pc:scale>0.0001</pc:scale>
-				<pc:offset>0</pc:offset>
+			    <pc:interpretation>uint64_t</pc:interpretation>
+			    <pc:scale>0.000001</pc:scale>
+				<pc:offset>100000</pc:offset>
 			  </pc:dimension>
 
 				
 			  <pc:dimension>
 			    <pc:position>5</pc:position>
-			    <pc:size>4</pc:size>
+			    <pc:size>2</pc:size>
 			    <pc:description> intensity of the return wave
 				</pc:description>
 			    <pc:name>intensity</pc:name>
-			    <pc:interpretation>float </pc:interpretation>
-			    <pc:scale>0.0001</pc:scale>
+			    <pc:interpretation>uint16_t </pc:interpretation>
+			    <pc:scale>1</pc:scale>
 				<pc:offset>0</pc:offset>
 			  </pc:dimension>
 
@@ -223,13 +223,13 @@
 
 	----
 	--Creating table for riegl laser, for space partitionning
-		DROP TABLE IF EXISTS vosges_2011.las_vosges;
-		CREATE TABLE vosges_2011.las_vosges(
+		DROP TABLE IF EXISTS vosges_2011.las_vosges_int;
+		CREATE TABLE vosges_2011.las_vosges_int(
 			gid SERIAL PRIMARY KEY,
 			file_name text,
-			patch PCPATCH(2)
+			patch PCPATCH(3)
 		);
-		ALTER TABLE vosges_2011.las_vosges SET TABLESPACE big_dd;
+		ALTER TABLE vosges_2011.las_vosges_int SET TABLESPACE big_dd;
 	
 --▓▒░End of the SQL script, now we need to launch the bash script to load data into the base▓▒░--
 --taht is , the "parallel_import_into_db.sh"

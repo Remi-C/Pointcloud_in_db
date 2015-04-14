@@ -33,15 +33,15 @@
 	#point type : default : "Riegl_nouvelle_acquisition_TMobilita_Janvier_2013"
 		declare pointschema="lidar_airborn_vosges_2011";
 	#Input data folder : default : "../data/riegl"
-		declare datafolder="../../../data";	
+		declare datafolder="/media/big2to/nasarchi2/Lidar_aeroporte/2011_Vosges/las";	
 	#name of the table where to write patches, schema qualified. Default : "acquisition_tmob_012013.riegl_pcpatch_space"
-		declare patchtable="vosges_2011.las_vosges";
+		declare patchtable="vosges_2011.las_vosges_int";
 	#number of parallel import: carefull, we need one cpu for parsing ply file and one cpu for psql instance, so this parameter should be at max : number_of_CPU/2
-		declare -i jobnumber=6;
+		declare -i jobnumber=8;
 	#name of the script to load one file into temporary table : default : "./utils/one_file_import_into_db.sh"
 		declare scriptplytotemporary="./utils/one_file_import_into_db.sh";
 	#name of the programm converting binary ply to ascii csv (separator = whitespace) , default : "./RPly_Ubuntu/bin/RPly_convert"
-		declare programmplytoascii="las2txt";	
+		declare programmplytoascii="/usr/bin/las2txt";	
 	#command to connect to the database: default "psql -d test_pointcloud -p 5432" 
 		#Warning : do not ad -h, or postgres will connect using TCP (thus needing a password)
 		declare psql_commande="psql -d vosges -p 5432";
